@@ -654,7 +654,7 @@ export default function FuelLogTable({
                 {/* License Plate */}
                 <td style={{ whiteSpace: 'nowrap' }}>
                   <span className="badge badge-info font-mono" style={{ letterSpacing: '0.6px', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                    {log.license_plate || log.vehicle_plate || log.code_abbr || '—'}
+                    {log.license_plate || log.vehicle_plate || (log.code_abbr && !log.code_abbr.startsWith('FL-') ? log.code_abbr : '—')}
                   </span>
                 </td>
 

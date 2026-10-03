@@ -577,7 +577,9 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
                                 {isKm ? 'បំពេញស្តុក' : 'STOCK IN'}
                               </span>
                             </td>
-                            <td className="plate" style={{ color: '#15803d', whiteSpace: 'nowrap' }}>{log.license_plate || log.code_abbr || '—'}</td>
+                            <td className="plate" style={{ color: '#15803d', whiteSpace: 'nowrap' }}>
+                              {log.license_plate || (log.code_abbr && !log.code_abbr.startsWith('FL-') ? log.code_abbr : '—')}
+                            </td>
                             <td className="driver" style={{ color: '#15803d' }}>{log.driver_name || log.driver || '—'}</td>
                             <td className="time" style={{ whiteSpace: 'nowrap' }}>
                               {formatTime12h(log.time_in)}
@@ -637,7 +639,9 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
                             <td className="desc">
                               {log.description || (isKm ? 'ឡានចាក់សាំង' : 'Vehicle Refuel')}
                             </td>
-                            <td className="plate" style={{ whiteSpace: 'nowrap' }}>{log.license_plate || log.code_abbr || '—'}</td>
+                            <td className="plate" style={{ whiteSpace: 'nowrap' }}>
+                              {log.license_plate || (log.code_abbr && !log.code_abbr.startsWith('FL-') ? log.code_abbr : '—')}
+                            </td>
                             <td className="driver">{log.driver_name || log.driver || log.driverName || '—'}</td>
                             <td className="time" style={{ whiteSpace: 'nowrap' }}>
                               {formatTime12h(log.time_in)}
