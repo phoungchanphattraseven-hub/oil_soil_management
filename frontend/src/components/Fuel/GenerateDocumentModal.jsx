@@ -200,6 +200,8 @@ const PRINT_CSS = `
     font-family: inherit;
     color: #0f172a;
     letter-spacing: 0.3px;
+    white-space: nowrap;
+    word-break: keep-all;
   }
   .log-table .driver {
     text-align: center;
@@ -389,6 +391,27 @@ const PRINT_CSS = `
   }
 `;
 
+function formatTime12h(timeStr) {
+  if (!timeStr) return '—';
+  let hhmm = timeStr;
+  if (timeStr.includes('T')) {
+    hhmm = timeStr.substring(11, 16);
+  } else if (timeStr.includes(':')) {
+    hhmm = timeStr.substring(0, 5);
+  } else {
+    return timeStr;
+  }
+  const parts = hhmm.split(':');
+  if (parts.length < 2) return timeStr;
+  let hours = parseInt(parts[0], 10);
+  const minutes = parts[1];
+  if (isNaN(hours)) return timeStr;
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  return `${hours}:${minutes} ${ampm}`;
+}
+
 /* ─── Document Content (shared between screen + print) ────────────── */
 function DocumentContent({ meta, logs, stations = [], lang }) {
   const isKm = lang === 'km';
@@ -491,9 +514,9 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
             <tr>
               <th style={{ width: '32px' }}>#</th>
               <th className="th-desc">{isKm ? 'ការពិពណ៌នា' : 'Description'}</th>
-              <th style={{ width: '85px', whiteSpace: 'nowrap' }}>{isKm ? 'ផ្លាកលេខ' : 'License Plate'}</th>
+              <th style={{ width: '105px', whiteSpace: 'nowrap' }}>{isKm ? 'ផ្លាកលេខ' : 'License Plate'}</th>
               <th style={{ width: '100px' }}>{isKm ? 'អ្នកបើកបរ' : 'Driver / Staff'}</th>
-              <th style={{ width: '65px' }}>{isKm ? 'ម៉ោង' : 'Time'}</th>
+              <th style={{ width: '75px', whiteSpace: 'nowrap' }}>{isKm ? 'ម៉ោង' : 'Time'}</th>
               <th style={{ width: '55px' }}>{isKm ? 'វេន' : 'Shift'}</th>
               <th className="th-vol" style={{ width: '80px' }}>{isKm ? 'ដកប្រើ (Out L)' : 'Fuel Out (L)'}</th>
               <th className="th-vol" style={{ width: '85px', color: '#15803d' }}>{isKm ? 'បំពេញ (In L)' : 'Oil In (L)'}</th>
@@ -554,12 +577,10 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
                                 {isKm ? 'បំពេញស្តុក' : 'STOCK IN'}
                               </span>
                             </td>
-                            <td className="plate" style={{ color: '#15803d' }}>{log.license_plate || log.code_abbr || '—'}</td>
+                            <td className="plate" style={{ color: '#15803d', whiteSpace: 'nowrap' }}>{log.license_plate || log.code_abbr || '—'}</td>
                             <td className="driver" style={{ color: '#15803d' }}>{log.driver_name || log.driver || '—'}</td>
-                            <td className="time">
-                              {log.time_in
-                                ? (log.time_in.includes('T') ? log.time_in.substring(11, 16) : log.time_in.substring(0, 5))
-                                : '—'}
+                            <td className="time" style={{ whiteSpace: 'nowrap' }}>
+                              {formatTime12h(log.time_in)}
                             </td>
                             <td className="shift-badge">
                               {currentShift === 'Morning' ? (isKm ? 'ព្រឹក' : 'Morning') : (isKm ? 'រសៀល' : 'Afternoon')}
@@ -616,12 +637,10 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
                             <td className="desc">
                               {log.description || (isKm ? 'ឡានចាក់សាំង' : 'Vehicle Refuel')}
                             </td>
-                            <td className="plate">{log.license_plate || log.code_abbr || '—'}</td>
+                            <td className="plate" style={{ whiteSpace: 'nowrap' }}>{log.license_plate || log.code_abbr || '—'}</td>
                             <td className="driver">{log.driver_name || log.driver || log.driverName || '—'}</td>
-                            <td className="time">
-                              {log.time_in
-                                ? (log.time_in.includes('T') ? log.time_in.substring(11, 16) : log.time_in.substring(0, 5))
-                                : '—'}
+                            <td className="time" style={{ whiteSpace: 'nowrap' }}>
+                              {formatTime12h(log.time_in)}
                             </td>
                             <td className="shift-badge">
                               {currentShift === 'Morning' ? (isKm ? 'ព្រឹក' : 'Morning') : (isKm ? 'រសៀល' : 'Afternoon')}

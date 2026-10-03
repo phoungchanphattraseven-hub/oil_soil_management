@@ -11,6 +11,27 @@ export function exportFuelLogsToExcel(logs = [], filename = 'Fuel_Logs_Archive.x
     return;
   }
 
+function formatTime12h(timeStr) {
+  if (!timeStr) return '';
+  let hhmm = timeStr;
+  if (timeStr.includes('T')) {
+    hhmm = timeStr.substring(11, 16);
+  } else if (timeStr.includes(':')) {
+    hhmm = timeStr.substring(0, 5);
+  } else {
+    return timeStr;
+  }
+  const parts = hhmm.split(':');
+  if (parts.length < 2) return timeStr;
+  let hours = parseInt(parts[0], 10);
+  const minutes = parts[1];
+  if (isNaN(hours)) return timeStr;
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  return `${hours}:${minutes} ${ampm}`;
+}
+
   // Format rows for Excel
   const data = logs.map((log, index) => ({
     [isKm ? 'ល.រ' : 'No.']: index + 1,
@@ -22,7 +43,7 @@ export function exportFuelLogsToExcel(logs = [], filename = 'Fuel_Logs_Archive.x
     [isKm ? 'ប្រេងចេញ (L)' : 'Refill Liters (L)']: parseFloat(log.refill_liters) || 0,
     [isKm ? 'ប្រេងចូល (L)' : 'Oil In (L)']: parseFloat(log.oil_in) || 0,
     [isKm ? 'វេន' : 'Shift']: log.shift || 'Morning',
-    [isKm ? 'ម៉ោងចូល' : 'Time In']: log.time_in ? log.time_in.substring(11, 16) : '',
+    [isKm ? 'ម៉ោងចូល' : 'Time In']: formatTime12h(log.time_in),
     [isKm ? 'អ្នកកត់ត្រា' : 'Logged By']: log.logged_by || 'Phattra',
     [isKm ? 'ស្ថានភាព' : 'Status']: log.status || 'Completed'
   }));

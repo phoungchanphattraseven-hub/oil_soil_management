@@ -16,6 +16,27 @@ function formatDatetimeForInput(val) {
   return val.substring(0, 16);
 }
 
+function formatTime12h(timeStr) {
+  if (!timeStr) return '—';
+  let hhmm = timeStr;
+  if (timeStr.includes('T')) {
+    hhmm = timeStr.substring(11, 16);
+  } else if (timeStr.includes(':')) {
+    hhmm = timeStr.substring(0, 5);
+  } else {
+    return timeStr;
+  }
+  const parts = hhmm.split(':');
+  if (parts.length < 2) return timeStr;
+  let hours = parseInt(parts[0], 10);
+  const minutes = parts[1];
+  if (isNaN(hours)) return timeStr;
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  return `${hours}:${minutes} ${ampm}`;
+}
+
 function getStoredArchives() {
   try {
     const raw = localStorage.getItem('saved_fuel_table_archives');
@@ -631,8 +652,8 @@ export default function FuelLogTable({
                 </td>
 
                 {/* License Plate */}
-                <td>
-                  <span className="badge badge-info font-mono" style={{ letterSpacing: '0.6px', fontWeight: 700 }}>
+                <td style={{ whiteSpace: 'nowrap' }}>
+                  <span className="badge badge-info font-mono" style={{ letterSpacing: '0.6px', fontWeight: 700, whiteSpace: 'nowrap' }}>
                     {log.license_plate || log.vehicle_plate || log.code_abbr || '—'}
                   </span>
                 </td>
@@ -675,8 +696,8 @@ export default function FuelLogTable({
                     }}>
                       {log.shift === 'Day' ? 'Morning' : (log.shift || 'Morning')}
                     </span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-                      {log.time_in ? log.time_in.substring(11, 16) : ''}
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                      {formatTime12h(log.time_in)}
                     </span>
                   </div>
                 </td>
@@ -763,8 +784,8 @@ export default function FuelLogTable({
                     {log.station_name || 'Station'}
                   </span>
                 </div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                  <Clock size={11} /> {log.time_in ? log.time_in.substring(11, 16) : ''}
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '3px', whiteSpace: 'nowrap' }}>
+                  <Clock size={11} /> {formatTime12h(log.time_in)}
                 </div>
               </div>
 
