@@ -868,6 +868,7 @@ select.form-control option {
 
 .toolbar-left  { display: flex; align-items: center; gap: 8px; }
 .toolbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.fuel-table-toolbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: nowrap; }
 
 /* ─── Table Panel (card containing table) ────────────── */
 .table-panel {

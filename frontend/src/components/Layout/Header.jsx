@@ -35,7 +35,7 @@ export default function Header({
       <div className="header-left">
         {setSidebarVisible && (
           <button
-            className="sidebar-toggle-btn hide-on-desktop"
+            className="sidebar-toggle-btn"
             onClick={() => setSidebarVisible(!isSidebarVisible)}
             title={lang === 'km' ? 'បិទ/បើក របារចំហៀង' : 'Toggle Sidebar'}
             aria-label="Toggle Navigation"

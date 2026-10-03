@@ -412,7 +412,7 @@ export default function FuelLogTable({
           </div>
 
           {/* Filter Controls */}
-          <div className="toolbar-right" style={{ flexWrap: 'wrap' }}>
+          <div className="toolbar-right fuel-table-toolbar-right">
             {/* Search */}
             <div className="filter-input-wrap">
               <Search size={13} className="filter-icon" />
@@ -422,7 +422,7 @@ export default function FuelLogTable({
                 placeholder={lang === 'km' ? 'ផ្លាក / អ្នកបើកបរ / ការពិពណ៌នា...' : 'Plate / driver / desc...'}
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                style={{ paddingLeft: '30px', height: '32px', fontSize: '0.78rem', minWidth: '140px', flex: '1 1 auto' }}
+                style={{ paddingLeft: '30px', height: '32px', fontSize: '0.78rem', width: '190px' }}
               />
             </div>
 
@@ -431,7 +431,7 @@ export default function FuelLogTable({
               className="form-control"
               value={stationFilter}
               onChange={e => setStationFilter(e.target.value)}
-              style={{ height: '32px', fontSize: '0.78rem', minWidth: '120px', flex: '1 1 auto' }}
+              style={{ height: '32px', fontSize: '0.78rem', width: '140px' }}
             >
               <option value="ALL">{lang === 'km' ? 'គ្រប់ស្ថានីយ៍' : 'All Stations'}</option>
               {uniqueStations.map(st => <option key={st} value={st}>{st}</option>)}
@@ -442,7 +442,7 @@ export default function FuelLogTable({
               <button
                 onClick={() => onOpenLogForm(dateFilter)}
                 className="btn btn-fuel btn-sm"
-                style={{ height: '32px', fontSize: '0.76rem' }}
+                style={{ height: '32px', fontSize: '0.76rem', whiteSpace: 'nowrap' }}
               >
                 <Plus size={13} /> {lang === 'km' ? 'កត់ត្រា' : 'Log Fuel'}
               </button>
@@ -453,6 +453,7 @@ export default function FuelLogTable({
               <button
                 onClick={() => { setSearchTerm(''); handleDateChange(''); setShiftFilter('ALL'); setStationFilter('ALL'); }}
                 className="btn btn-ghost btn-sm"
+                style={{ whiteSpace: 'nowrap' }}
                 title={lang === 'km' ? 'សម្អាតតម្រង' : 'Clear filters'}
               >
                 <RotateCcw size={12} /> {lang === 'km' ? 'សម្អាត' : 'Reset'}

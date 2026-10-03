@@ -14,7 +14,12 @@ export default function Layout({
   theme,
   setTheme
 }) {
-  const [isSidebarVisible, setSidebarVisible] = useState(false);
+  const [isSidebarVisible, setSidebarVisible] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth > 768;
+    }
+    return true;
+  });
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window !== 'undefined') {
       return window.innerWidth <= 768;
