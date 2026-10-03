@@ -59,9 +59,9 @@ export default function FuelLogForm({
       return;
     }
     setSelectedStaffId(member.id);
-    // Auto-fill description if empty
-    if (!description || description === 'ឡានចាក់សាំង') {
-      setDescription(isKm ? `ឡានចាក់សាំង — ${member.name}` : `Refueling — ${member.name}`);
+    // Keep description clean without attaching name
+    if (!description || description.includes('—')) {
+      setDescription(isKm ? 'ឡានចាក់សាំង' : 'Refueling');
     }
   };
 
