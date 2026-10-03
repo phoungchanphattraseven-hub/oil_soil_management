@@ -820,14 +820,18 @@ export default function FuelLogTable({
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button
-                    onClick={() => handleStartEdit(log)}
+                    onClick={() => setEditingLog({ ...log })}
                     className="mobile-action-btn edit"
                   >
                     <Pencil size={12} color="var(--primary)" />
                     <span>{lang === 'km' ? 'កែប្រែ' : 'Edit'}</span>
                   </button>
                   <button
-                    onClick={() => handleDeleteLog(log.id)}
+                    onClick={() => {
+                      if (window.confirm(lang === 'km' ? 'លុបការកត់ត្រានេះ?' : 'Delete this log entry?')) {
+                        if (onDelete) onDelete(log.id);
+                      }
+                    }}
                     className="mobile-action-btn delete"
                   >
                     <Trash2 size={12} />

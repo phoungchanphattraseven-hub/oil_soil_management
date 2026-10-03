@@ -4,9 +4,10 @@ import Layout from './components/Layout/Layout';
 import Dashboard from './pages/Dashboard';
 import FuelManagement from './pages/FuelManagement';
 import SoilManagement from './pages/SoilManagement';
+import LoginPage from './pages/LoginPage';
 import { MOCK_USERS, DEFAULT_FUEL_STATIONS, INITIAL_FUEL_LOGS, INITIAL_SOIL_LOGS, DEFAULT_ABBR_CODES, DEFAULT_DRIVERS } from './data/mockData';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8000/api' : '/api');
 
 function getStoredAbbrCodes() {
   try {
@@ -36,7 +37,19 @@ function getStoredArchives() {
   } catch { return []; }
 }
 
+function isSessionValid() {
+  try {
+    const token   = localStorage.getItem('app_session_token');
+    const expiry  = parseInt(localStorage.getItem('app_session_expiry') || '0', 10);
+    return !!(token && expiry && Date.now() < expiry);
+  } catch { return false; }
+}
+
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(isSessionValid);
+  const [sessionEmail, setSessionEmail] = useState(() => {
+    try { return localStorage.getItem('app_session_email') || ''; } catch { return ''; }
+  });
   const [activeRole, setActiveRole] = useState('admin');
   const [lang, setLang] = useState(() => {
     try { return localStorage.getItem('app_lang') || 'km'; }
@@ -53,6 +66,24 @@ export default function App() {
   const [drivers, setDrivers] = useState(getStoredDrivers);
   const [staff, setStaff] = useState(getStoredStaff);
   const [savedArchives, setSavedArchives] = useState(getStoredArchives);
+
+  const handleLoginSuccess = (email) => {
+    setSessionEmail(email);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem('app_session_token');
+      localStorage.removeItem('app_session_email');
+      localStorage.removeItem('app_session_expiry');
+    } catch {}
+    setIsAuthenticated(false);
+    setSessionEmail('');
+  };
+
+  // Auth guard — set but NOT early-returned here (hooks must run first)
+  const needsLogin = !isAuthenticated;
 
   // Sync savedArchives to localStorage
   useEffect(() => {
@@ -136,6 +167,7 @@ export default function App() {
         phone: member.phone,
         role: member.role,
         photo_url: member.photo_url || '',
+        signature_url: member.signature_url || '',
       })
     })
       .then(res => res.json())
@@ -163,6 +195,7 @@ export default function App() {
         phone: updated.phone,
         role: updated.role,
         photo_url: updated.photo_url || '',
+        signature_url: updated.signature_url || '',
       })
     })
       .then(res => res.json())
@@ -175,6 +208,26 @@ export default function App() {
     fetch(`${API_BASE_URL}/staff/${id}`, { method: 'DELETE' })
       .then(res => res.json())
       .catch(e => console.log('Staff delete API offline, removed locally.'));
+  };
+
+  // Handler: Save scanned digital signature for Staff or Fleet/Driver
+  const handleSaveSignature = (targetId, signatureDataUrl, type = 'staff') => {
+    if (type === 'staff') {
+      const existing = staff.find(s => s.id === targetId);
+      if (existing) {
+        handleEditStaff({ ...existing, signature_url: signatureDataUrl });
+      }
+    } else {
+      // Driver / Fleet signature update
+      setDrivers(prev => prev.map(d => {
+        if (typeof d === 'string') {
+          return d === targetId ? { name: d, signature_url: signatureDataUrl } : d;
+        } else if (d && (d.id === targetId || d.name === targetId)) {
+          return { ...d, signature_url: signatureDataUrl };
+        }
+        return d;
+      }));
+    }
   };
 
   // Fetch live data from backend API if available
@@ -247,27 +300,60 @@ export default function App() {
       .catch(e => console.log('Backend sync offline, removed locally.'));
   };
 
-  // Handler: Add new fuel log and update station stock
+  // Helper to match station by ID (string/number) or station_name flexibly
+  const isSameStation = (station, targetId, targetName) => {
+    if (!station) return false;
+    if (targetId && (station.id === targetId || String(station.id) === String(targetId))) return true;
+    if (targetName) {
+      const sName = String(station.name || station.station_name || '').trim().toLowerCase();
+      const tName = String(targetName).trim().toLowerCase();
+      if (sName && tName && sName === tName) return true;
+    }
+    return false;
+  };
+
+  // Handler: Add new fuel log and update station stock in real time
   const handleAddFuelLog = (newLog) => {
     setFuelLogs(prev => [newLog, ...prev]);
 
+    const oilOut = parseFloat(newLog.refill_liters) || 0;
+    const oilIn  = parseFloat(newLog.oil_in) || 0;
+
     // Deduct oil spent (refill_liters) and add oil received (oil_in) to station stock
-    setFuelStations(prevStations =>
-      prevStations.map(station => {
-        if (station.id === newLog.station_id) {
-          const oilOut = parseFloat(newLog.refill_liters) || 0;
-          const oilIn  = parseFloat(newLog.oil_in) || 0;
-          const updatedStock = Math.max(0, station.current_stock_liters - oilOut + oilIn);
+    setFuelStations(prevStations => {
+      let matched = false;
+      const updated = prevStations.map(station => {
+        if (isSameStation(station, newLog.station_id, newLog.station_name)) {
+          matched = true;
+          const current = parseFloat(station.current_stock_liters) || 0;
+          const updatedStock = Math.max(0, current - oilOut + oilIn);
           return {
             ...station,
             current_stock_liters: updatedStock,
-            status: updatedStock < station.reorder_threshold_liters ? 'Reorder Needed' : 'Normal',
+            status: updatedStock < (station.reorder_threshold_liters || 4000) ? 'Reorder Needed' : 'Normal',
             last_refill: new Date().toISOString().replace('T', ' ').substring(0, 16)
           };
         }
         return station;
-      })
-    );
+      });
+
+      // If no station matched explicitly, update the first station by default
+      if (!matched && prevStations.length > 0) {
+        return prevStations.map((st, idx) => {
+          if (idx === 0) {
+            const current = parseFloat(st.current_stock_liters) || 0;
+            const updatedStock = Math.max(0, current - oilOut + oilIn);
+            return {
+              ...st,
+              current_stock_liters: updatedStock,
+              status: updatedStock < (st.reorder_threshold_liters || 4000) ? 'Reorder Needed' : 'Normal'
+            };
+          }
+          return st;
+        });
+      }
+      return updated;
+    });
 
     // Send log to backend API
     fetch(`${API_BASE_URL}/fuel/log`, {
@@ -304,21 +390,38 @@ export default function App() {
       .catch(e => console.log('Backend sync offline, stored locally.'));
   };
 
-  // Handler: Delete a fuel log and restore stock
+  // Handler: Delete a fuel log and restore stock in real time
   const handleDeleteFuelLog = (logId) => {
     const log = fuelLogs.find(l => l.id === logId);
     if (!log) return;
     setFuelLogs(prev => prev.filter(l => l.id !== logId));
-    // Reverse the effect: restore oil_out to stock, remove oil_in from stock
+
     const oilOut = parseFloat(log.refill_liters) || 0;
     const oilIn  = parseFloat(log.oil_in) || 0;
-    setFuelStations(prev => prev.map(s => {
-      if (s.id === log.station_id) {
-        const restored = Math.max(0, s.current_stock_liters + oilOut - oilIn);
-        return { ...s, current_stock_liters: restored, status: restored < s.reorder_threshold_liters ? 'Reorder Needed' : 'Normal' };
+
+    setFuelStations(prev => {
+      let matched = false;
+      const updated = prev.map(s => {
+        if (isSameStation(s, log.station_id, log.station_name)) {
+          matched = true;
+          const current = parseFloat(s.current_stock_liters) || 0;
+          const restored = Math.max(0, current + oilOut - oilIn);
+          return { ...s, current_stock_liters: restored, status: restored < (s.reorder_threshold_liters || 4000) ? 'Reorder Needed' : 'Normal' };
+        }
+        return s;
+      });
+      if (!matched && prev.length > 0) {
+        return prev.map((s, idx) => {
+          if (idx === 0) {
+            const current = parseFloat(s.current_stock_liters) || 0;
+            const restored = Math.max(0, current + oilOut - oilIn);
+            return { ...s, current_stock_liters: restored };
+          }
+          return s;
+        });
       }
-      return s;
-    }));
+      return updated;
+    });
 
     // Delete from Supabase via backend API
     fetch(`${API_BASE_URL}/fuel/log/${logId}`, {
@@ -329,25 +432,62 @@ export default function App() {
       .catch(e => console.log('Backend sync offline, removed locally.'));
   };
 
-  // Handler: Edit a fuel log (replaces old, adjusts stock delta)
+  // Handler: Edit a fuel log (replaces old, adjusts stock delta in real time)
   const handleEditFuelLog = (updatedLog) => {
     const old = fuelLogs.find(l => l.id === updatedLog.id);
     if (!old) return;
     setFuelLogs(prev => prev.map(l => l.id === updatedLog.id ? updatedLog : l));
-    // Adjust stock: reverse old effect (old.oil_out deducted, old.oil_in added)
-    //               then apply new effect (new.oil_out deduct, new.oil_in add)
+
     const oldOut = parseFloat(old.refill_liters) || 0;
     const oldIn  = parseFloat(old.oil_in) || 0;
     const newOut = parseFloat(updatedLog.refill_liters) || 0;
     const newIn  = parseFloat(updatedLog.oil_in) || 0;
-    const delta  = (oldOut - oldIn) - (newOut - newIn); // net change to add back
-    setFuelStations(prev => prev.map(s => {
-      if (s.id === updatedLog.station_id) {
-        const adjusted = Math.max(0, s.current_stock_liters + delta);
-        return { ...s, current_stock_liters: adjusted, status: adjusted < s.reorder_threshold_liters ? 'Reorder Needed' : 'Normal' };
+    const delta  = (oldOut - oldIn) - (newOut - newIn); // net change to restore
+
+    setFuelStations(prev => {
+      let matched = false;
+      const updated = prev.map(s => {
+        if (isSameStation(s, updatedLog.station_id, updatedLog.station_name)) {
+          matched = true;
+          const current = parseFloat(s.current_stock_liters) || 0;
+          const adjusted = Math.max(0, current + delta);
+          return { ...s, current_stock_liters: adjusted, status: adjusted < (s.reorder_threshold_liters || 4000) ? 'Reorder Needed' : 'Normal' };
+        }
+        return s;
+      });
+      if (!matched && prev.length > 0) {
+        return prev.map((s, idx) => {
+          if (idx === 0) {
+            const current = parseFloat(s.current_stock_liters) || 0;
+            const adjusted = Math.max(0, current + delta);
+            return { ...s, current_stock_liters: adjusted };
+          }
+          return s;
+        });
       }
-      return s;
-    }));
+      return updated;
+    });
+
+    // Persist edit to backend (Supabase via API)
+    fetch(`${API_BASE_URL}/fuel/log/${updatedLog.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        station_id: updatedLog.station_id,
+        station_name: updatedLog.station_name,
+        log_date: updatedLog.log_date,
+        description: updatedLog.description,
+        driver_name: updatedLog.driver_name,
+        license_plate: updatedLog.license_plate,
+        refill_liters: updatedLog.refill_liters,
+        oil_in: updatedLog.oil_in,
+        time_in: updatedLog.time_in,
+        shift: updatedLog.shift,
+        code_abbr: updatedLog.code_abbr,
+      })
+    })
+      .then(res => res.json())
+      .catch(e => console.log('Backend edit sync offline, updated locally.'));
   };
 
   // Handler: Clear active fuel logs (archives live table and clears backend)
@@ -403,8 +543,12 @@ export default function App() {
   };
 
   return (
+    <>
+      {needsLogin ? (
+        <LoginPage onLoginSuccess={handleLoginSuccess} />
+      ) : (
     <Router>
-      <Layout activeRole={activeRole} setActiveRole={setActiveRole} alertCount={alertCount} lang={lang} setLang={setLang} theme={theme} setTheme={setTheme}>
+      <Layout activeRole={activeRole} setActiveRole={setActiveRole} alertCount={alertCount} lang={lang} setLang={setLang} theme={theme} setTheme={setTheme} onLogout={handleLogout} sessionEmail={sessionEmail}>
         <Routes>
           <Route
             path="/"
@@ -434,6 +578,7 @@ export default function App() {
                 onAddStaff={handleAddStaff}
                 onEditStaff={handleEditStaff}
                 onDeleteStaff={handleDeleteStaff}
+                onSaveSignature={handleSaveSignature}
                 onAddFuelLog={handleAddFuelLog}
                 onAddStation={handleAddStation}
                 onDeleteStation={handleDeleteStation}
@@ -463,5 +608,7 @@ export default function App() {
         </Routes>
       </Layout>
     </Router>
+      )}
+    </>
   );
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Clock, Bell, Sun, Moon, Menu } from 'lucide-react';
+import { Shield, Clock, Bell, Sun, Moon, Menu, LogOut } from 'lucide-react';
 import { MOCK_USERS } from '../../data/mockData';
 import { translations } from '../../data/translations';
 
@@ -12,7 +12,9 @@ export default function Header({
   setTheme,
   alertCount = 0,
   isSidebarVisible,
-  setSidebarVisible
+  setSidebarVisible,
+  onLogout,
+  sessionEmail = ''
 }) {
   const currentUser = MOCK_USERS[activeRole];
   const t = translations[lang] || translations.km;
@@ -28,6 +30,11 @@ export default function Header({
   const toggleRole = () => {
     setActiveRole(activeRole === 'admin' ? 'phattra' : 'admin');
   };
+
+  // Short display name from email
+  const emailDisplay = sessionEmail
+    ? sessionEmail.split('@')[0].replace(/[._-]/g, ' ')
+    : (currentUser?.name || 'Admin');
 
   return (
     <header className="app-header">
@@ -59,7 +66,7 @@ export default function Header({
 
       {/* Right: Controls */}
       <div className="header-right">
-        {/* Language Toggle: Single compact button on mobile */}
+        {/* Language Toggle */}
         <button
           className="header-pill-toggle"
           onClick={toggleLanguage}
@@ -105,24 +112,56 @@ export default function Header({
           </div>
         )}
 
-        {/* User Avatar (click to toggle role on mobile) */}
+        {/* User Avatar — shows real logged-in email initial */}
         <button
           className="user-profile-btn"
           onClick={toggleRole}
-          title={lang === 'km' ? `តួនាទី៖ ${currentUser.name} (ចុចដើម្បីប្តូរ)` : `Role: ${currentUser.name} (Tap to switch)`}
+          title={lang === 'km' ? `ចុចដើម្បីប្តូរតួនាទី` : `Tap to switch role`}
+          style={{ gap: '8px' }}
         >
-          <img
-            src={currentUser.avatar}
-            alt={currentUser.name}
-            className="user-avatar-img"
-          />
+          <div style={{
+            width: '30px', height: '30px', borderRadius: '50%',
+            background: 'linear-gradient(135deg, var(--primary), #7c3aed)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0, fontSize: '0.75rem', fontWeight: 800, color: '#fff',
+            boxShadow: '0 2px 8px rgba(99,102,241,0.35)'
+          }}>
+            {emailDisplay.charAt(0).toUpperCase()}
+          </div>
           <div className="user-info-text hide-on-mobile">
-            <div className="user-name">{currentUser.name}</div>
-            <div className="user-role">
-              {lang === 'km' ? currentUser.roleKhmer : (activeRole === 'admin' ? t.adminRole : t.phattraRole)}
+            <div className="user-name" style={{ fontSize: '0.78rem', textTransform: 'capitalize' }}>
+              {emailDisplay}
+            </div>
+            <div className="user-role" style={{ fontSize: '0.65rem' }}>
+              {lang === 'km' ? 'អ្នកគ្រប់គ្រង' : 'Administrator'}
             </div>
           </div>
         </button>
+
+        {/* Logout Button */}
+        {onLogout && (
+          <button
+            id="logout-btn"
+            onClick={onLogout}
+            title={lang === 'km' ? 'ចាកចេញ' : 'Sign Out'}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '5px',
+              padding: '6px 12px',
+              background: 'var(--danger-subtle)',
+              border: '1px solid var(--danger-border)',
+              borderRadius: 'var(--r-sm)',
+              color: 'var(--danger)',
+              fontSize: '0.75rem', fontWeight: 700,
+              cursor: 'pointer', transition: 'all 0.15s ease',
+              whiteSpace: 'nowrap', flexShrink: 0
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--danger)'; e.currentTarget.style.color = '#fff'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--danger-subtle)'; e.currentTarget.style.color = 'var(--danger)'; }}
+          >
+            <LogOut size={13} />
+            <span className="hide-on-mobile">{lang === 'km' ? 'ចាកចេញ' : 'Logout'}</span>
+          </button>
+        )}
       </div>
     </header>
   );

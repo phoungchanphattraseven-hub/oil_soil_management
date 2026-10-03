@@ -71,7 +71,7 @@ class FuelLogInput(BaseModel):
     license_plate: Optional[str] = ""
     refill_liters: float = 0.0
     oil_in: float = 0.0
-    time_in: str
+    time_in: Optional[str] = ""
     time_out: Optional[str] = None
     shift: Optional[str] = "Morning"
     code_abbr: Optional[str] = ""
@@ -100,6 +100,7 @@ class StaffInput(BaseModel):
     phone: Optional[str] = ""
     role: Optional[str] = "Driver"
     photo_url: Optional[str] = ""
+    signature_url: Optional[str] = ""
 
 @app.get("/api/health")
 def health_check():
@@ -108,6 +109,34 @@ def health_check():
         "service": "Station Management Operations API",
         "supabase_connected": supabase is not None,
         "supabase_url": SUPABASE_URL if SUPABASE_URL else "Not set"
+    }
+
+# ──────────────────────────────────────────────
+# Auth Endpoint — validates against .env credentials
+# ──────────────────────────────────────────────
+
+class LoginInput(BaseModel):
+    email: str
+    password: str
+
+@app.post("/api/auth/login")
+def login(data: LoginInput):
+    admin_email    = os.environ.get("email", "").strip().lower()
+    admin_password = os.environ.get("password", "").strip()
+
+    if not admin_email or not admin_password:
+        raise HTTPException(status_code=500, detail="Server credentials not configured in .env")
+
+    if data.email.strip().lower() != admin_email or data.password != admin_password:
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+
+    import secrets
+    token = secrets.token_hex(32)
+    return {
+        "status": "success",
+        "token": token,
+        "email": admin_email,
+        "message": "Login successful"
     }
 
 @app.get("/api/dashboard/summary")
@@ -191,6 +220,59 @@ def clear_all_fuel_logs():
     except Exception as err:
         print("Error clearing fuel logs:", str(err))
         raise HTTPException(status_code=500, detail=str(err))
+
+
+@app.put("/api/fuel/log/{log_id}")
+def update_fuel_log(log_id: str, data: FuelLogInput):
+    if not supabase:
+        return {"status": "demo", "data": data.dict()}
+    try:
+        if not is_valid_uuid(log_id):
+            return {"status": "success", "message": f"Local fuel log {log_id} updated (no Supabase sync needed)"}
+
+        # Fetch existing log to calculate stock delta
+        existing = supabase.table("fuel_logs").select("refill_liters, oil_in, station_id").eq("id", log_id).execute()
+        old_out = 0.0
+        old_in = 0.0
+        station_id_from_db = None
+        if existing.data and len(existing.data) > 0:
+            old_out = float(existing.data[0].get("refill_liters") or 0)
+            old_in = float(existing.data[0].get("oil_in") or 0)
+            station_id_from_db = existing.data[0].get("station_id")
+
+        update_data = {
+            "description": data.description or "",
+            "driver_name": data.driver_name or "",
+            "license_plate": data.license_plate or "",
+            "refill_liters": data.refill_liters,
+            "oil_in": data.oil_in,
+            "time_in": data.time_in,
+            "shift": data.shift or "Morning",
+            "code_abbr": data.code_abbr or "",
+        }
+        if data.log_date:
+            update_data["log_date"] = data.log_date
+
+        res = supabase.table("fuel_logs").update(update_data).eq("id", log_id).execute()
+
+        # Reconcile station stock: undo old values, apply new values
+        target_id = station_id_from_db or (data.station_id if is_valid_uuid(data.station_id) else None)
+        if target_id:
+            try:
+                st = supabase.table("fuel_stations").select("current_stock_liters").eq("id", target_id).execute()
+                if st.data and len(st.data) > 0:
+                    current = float(st.data[0]["current_stock_liters"])
+                    # Undo old effect, apply new effect
+                    new_stock = max(0.0, current + old_out - old_in - data.refill_liters + data.oil_in)
+                    supabase.table("fuel_stations").update({"current_stock_liters": new_stock}).eq("id", target_id).execute()
+            except Exception as st_err:
+                print("Stock reconcile warning on edit:", st_err)
+
+        return {"status": "success", "data": res.data}
+    except Exception as err:
+        print("Error updating fuel log:", str(err))
+        raise HTTPException(status_code=500, detail=str(err))
+
 
 
 @app.post("/api/fuel/log")
@@ -319,6 +401,7 @@ def create_staff(data: StaffInput):
             "phone": data.phone or "",
             "role": data.role or "Driver",
             "photo_url": data.photo_url or "",
+            "signature_url": data.signature_url or "",
         }
         res = supabase.table("staff").insert(insert_data).execute()
         print(f"Staff '{data.name}' created in Supabase!")
@@ -340,6 +423,7 @@ def update_staff(staff_id: str, data: StaffInput):
             "phone": data.phone or "",
             "role": data.role or "Driver",
             "photo_url": data.photo_url or "",
+            "signature_url": data.signature_url or "",
         }
         if is_valid_uuid(staff_id):
             res = supabase.table("staff").update(update_data).eq("id", staff_id).execute()

@@ -30,6 +30,7 @@ export default function FuelManagement({
   onAddStaff,
   onEditStaff,
   onDeleteStaff,
+  onSaveSignature,
   onAddFuelLog,
   onAddStation,
   onDeleteStation,
@@ -396,9 +397,11 @@ export default function FuelManagement({
       {activeSubTab === 'fleet' && (
         <StaffManager
           staff={staff}
+          drivers={drivers}
           onAddStaff={onAddStaff}
           onEditStaff={onEditStaff}
           onDeleteStaff={onDeleteStaff}
+          onSaveSignature={onSaveSignature}
           stations={stations}
           fuelLogs={fuelLogs}
           lang={lang}

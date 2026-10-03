@@ -2,9 +2,10 @@ import React, { useState, useMemo } from 'react';
 import {
   User, Plus, Trash2, Search, Pencil, X, Check, Car,
   Phone, Briefcase, MapPin, ChevronDown, Users,
-  CheckCircle2, UserPlus, Camera
+  CheckCircle2, UserPlus, Camera, ShieldCheck, Sparkles
 } from 'lucide-react';
 import ImageUploader from '../Common/ImageUploader';
+import SignatureScannerModal from '../Common/SignatureScannerModal';
 
 const GENDER_OPTIONS = {
   km: ['ប្រុស', 'ស្រី', 'មិនបញ្ជាក់'],
@@ -130,6 +131,45 @@ function StaffCard({ staff, lang, onEdit, onDelete, confirmDeleteId, setConfirmD
             <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{staff.gender}</span>
           </div>
         )}
+        
+        {/* Signature Preview / Scan Action */}
+        <div style={{
+          marginTop: '8px', paddingTop: '8px',
+          borderTop: '1px dashed var(--border-subtle)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+        }}>
+          {staff.signature_url ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{
+                background: '#fff', borderRadius: '4px', padding: '2px 6px',
+                border: '1px solid var(--border-subtle)', height: '24px', display: 'flex', alignItems: 'center'
+              }}>
+                <img src={staff.signature_url} alt="Signature" style={{ maxHeight: '20px', maxWidth: '80px', objectFit: 'contain' }} />
+              </div>
+              <span style={{ fontSize: '0.7rem', color: 'var(--success)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '2px' }}>
+                <CheckCircle2 size={12} /> {isKm ? 'បានស្កេន' : 'Signed'}
+              </span>
+            </div>
+          ) : (
+            <span style={{ fontSize: '0.71rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+              {isKm ? 'គ្មានហត្ថលេខា' : 'No signature'}
+            </span>
+          )}
+
+          <button
+            type="button"
+            onClick={() => onScanSign(staff)}
+            className="btn btn-ghost btn-sm"
+            style={{
+              padding: '2px 8px', fontSize: '0.72rem', color: 'var(--primary)',
+              background: 'var(--primary-subtle)', borderRadius: 'var(--r-xs)',
+              display: 'flex', alignItems: 'center', gap: '4px'
+            }}
+          >
+            <ShieldCheck size={12} />
+            {staff.signature_url ? (isKm ? 'ស្កេនថ្មី' : 'Rescan') : (isKm ? 'ស្កេន' : 'Scan')}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -145,6 +185,7 @@ function StaffForm({ initial = {}, stations = [], onSave, onCancel, lang }) {
     license_plate: initial.license_plate || '',
     phone: initial.phone || '',
     photo_url: initial.photo_url || '',
+    signature_url: initial.signature_url || '',
   });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -237,15 +278,26 @@ function StaffForm({ initial = {}, stations = [], onSave, onCancel, lang }) {
         </div>
       </div>
 
-      {/* Photo Upload */}
-      <div className="form-group">
-        <ImageUploader
-          value={form.photo_url}
-          onChange={val => set('photo_url', val)}
-          label={isKm ? 'រូបថតបុគ្គលិក (Upload Photo)' : 'Staff Photo'}
-          hint={isKm ? 'ជ្រើសរើសរូបថតពីកុំព្យូទ័រ ឬទូរស័ព្ទ' : 'Select photo from device'}
-          compact
-        />
+      {/* Photo & Signature Upload */}
+      <div className="grid-form-2">
+        <div className="form-group">
+          <ImageUploader
+            value={form.photo_url}
+            onChange={val => set('photo_url', val)}
+            label={isKm ? 'រូបថតបុគ្គលិក (Staff Photo)' : 'Staff Photo'}
+            hint={isKm ? 'ជ្រើសរើសរូបថត' : 'Select photo'}
+            compact
+          />
+        </div>
+        <div className="form-group">
+          <ImageUploader
+            value={form.signature_url}
+            onChange={val => set('signature_url', val)}
+            label={isKm ? 'ហត្ថលេខា (Signature)' : 'Signature Image'}
+            hint={isKm ? 'រូបថត/ស្កេនហត្ថលេខា' : 'Signature image'}
+            compact
+          />
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '4px' }}>
@@ -261,7 +313,17 @@ function StaffForm({ initial = {}, stations = [], onSave, onCancel, lang }) {
   );
 }
 
-export default function StaffManager({ staff = [], onAddStaff, onEditStaff, onDeleteStaff, stations = [], fuelLogs = [], lang = 'km' }) {
+export default function StaffManager({
+  staff = [],
+  drivers = [],
+  onAddStaff,
+  onEditStaff,
+  onDeleteStaff,
+  onSaveSignature,
+  stations = [],
+  fuelLogs = [],
+  lang = 'km'
+}) {
   const isKm = lang === 'km';
   const [showForm, setShowForm] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
@@ -269,10 +331,15 @@ export default function StaffManager({ staff = [], onAddStaff, onEditStaff, onDe
   const [filterStation, setFilterStation] = useState('ALL');
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [successMsg, setSuccessMsg] = useState('');
+  const [showScannerModal, setShowScannerModal] = useState(false);
 
   const triggerToast = (msg) => {
     setSuccessMsg(msg);
     setTimeout(() => setSuccessMsg(''), 3000);
+  };
+
+  const handleOpenScannerForStaff = (staffMember) => {
+    setShowScannerModal(true);
   };
 
   const uniqueStations = useMemo(() => {
@@ -421,14 +488,29 @@ export default function StaffManager({ staff = [], onAddStaff, onEditStaff, onDe
           )}
         </div>
 
-        <button
-          onClick={() => { setEditingStaff(null); setShowForm(true); }}
-          className="btn btn-primary"
-          style={{ height: '34px', whiteSpace: 'nowrap' }}
-        >
-          <UserPlus size={14} />
-          {isKm ? 'បន្ថែមបុគ្គលិក' : 'Add Staff'}
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => setShowScannerModal(true)}
+            className="btn btn-secondary"
+            style={{
+              height: '34px', whiteSpace: 'nowrap',
+              color: 'var(--primary)', borderColor: 'var(--primary-border)',
+              display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600
+            }}
+          >
+            <ShieldCheck size={14} />
+            {isKm ? 'ស្កេនហត្ថលេខា' : 'Scan Signature'}
+          </button>
+
+          <button
+            onClick={() => { setEditingStaff(null); setShowForm(true); }}
+            className="btn btn-primary"
+            style={{ height: '34px', whiteSpace: 'nowrap' }}
+          >
+            <UserPlus size={14} />
+            {isKm ? 'បន្ថែមបុគ្គលិក' : 'Add Staff'}
+          </button>
+        </div>
       </div>
 
       {/* Add/Edit Form */}
@@ -491,11 +573,32 @@ export default function StaffManager({ staff = [], onAddStaff, onEditStaff, onDe
                 onDelete={handleDelete}
                 confirmDeleteId={confirmDeleteId}
                 setConfirmDeleteId={setConfirmDeleteId}
+                onScanSign={handleOpenScannerForStaff}
               />
             ))}
           </div>
         </>
       )}
+
+      {/* Signature Camera Scanner Modal */}
+      <SignatureScannerModal
+        isOpen={showScannerModal}
+        onClose={() => setShowScannerModal(false)}
+        staff={staff}
+        drivers={drivers}
+        onSaveSignature={(targetId, signatureUrl, type) => {
+          if (onSaveSignature) {
+            onSaveSignature(targetId, signatureUrl, type);
+          } else {
+            const targetStaff = staff.find(st => st.id === targetId);
+            if (targetStaff) {
+              onEditStaff({ ...targetStaff, signature_url: signatureUrl });
+            }
+          }
+          triggerToast(isKm ? 'បានស្កេន និងរក្សាទុកហត្ថលេខាជោគជ័យ!' : 'Signature scanned and saved successfully!');
+        }}
+        lang={lang}
+      />
     </div>
   );
 }

@@ -12,7 +12,9 @@ export default function Layout({
   lang,
   setLang,
   theme,
-  setTheme
+  setTheme,
+  onLogout,
+  sessionEmail
 }) {
   const [isSidebarVisible, setSidebarVisible] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -82,6 +84,8 @@ export default function Layout({
           alertCount={alertCount}
           isSidebarVisible={isSidebarVisible}
           setSidebarVisible={setSidebarVisible}
+          onLogout={onLogout}
+          sessionEmail={sessionEmail}
         />
 
         <main className="app-main-content">
