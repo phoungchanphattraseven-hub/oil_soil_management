@@ -401,15 +401,23 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
     return 'Morning';
   };
 
-  const totalLiters = logs.reduce((s, l) => s + (parseFloat(l.refill_liters) || 0), 0);
+  const totalOilOut = logs.reduce((s, l) => s + (parseFloat(l.refill_liters) || 0), 0);
+  const totalOilIn = logs.reduce((s, l) => s + (parseFloat(l.oil_in) || 0), 0);
+
   const morningLogs = logs.filter(l => normalizeShift(l.shift) === 'Morning');
   const afternoonLogs = logs.filter(l => normalizeShift(l.shift) === 'Afternoon');
-  const morningTotal = morningLogs.reduce((s, l) => s + (parseFloat(l.refill_liters) || 0), 0);
-  const afternoonTotal = afternoonLogs.reduce((s, l) => s + (parseFloat(l.refill_liters) || 0), 0);
+  const morningOut = morningLogs.reduce((s, l) => s + (parseFloat(l.refill_liters) || 0), 0);
+  const afternoonOut = afternoonLogs.reduce((s, l) => s + (parseFloat(l.refill_liters) || 0), 0);
+  const morningIn = morningLogs.reduce((s, l) => s + (parseFloat(l.oil_in) || 0), 0);
+  const afternoonIn = afternoonLogs.reduce((s, l) => s + (parseFloat(l.oil_in) || 0), 0);
 
   const primaryStation = (stations && stations.length > 0) ? stations[0] : null;
   const currentRemaining = primaryStation ? (primaryStation.current_stock_liters || 0) : 5430;
-  const openingStock = currentRemaining + totalLiters;
+  
+  // Mathematically precise Inventory Reconciliation equation:
+  // Closing Stock = Opening Stock + Total Oil In - Total Oil Out
+  // => Opening Stock = Closing Stock - Total Oil In + Total Oil Out
+  const openingStock = currentRemaining - totalOilIn + totalOilOut;
 
   const todayFull = new Date().toLocaleDateString(isKm ? 'km-KH' : 'en-US', {
     year: 'numeric', month: 'short', day: 'numeric'
@@ -426,7 +434,7 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
           <div className="doc-header-left">
             <div className="doc-company">{meta.companyName || (isKm ? 'ការិយាល័យគ្រប់គ្រងប្រតិបត្តិការ' : 'Operations Management Office')}</div>
             <div className="doc-title">
-              {isKm ? 'របាយការណ៍ប្រើប្រាស់សាំងប្រចាំថ្ងៃ' : 'DAILY FUEL CONSUMPTION REPORT'}
+              {isKm ? 'របាយការណ៍ប្រើប្រាស់ និងបំពេញសាំងប្រចាំថ្ងៃ' : 'DAILY FUEL CONSUMPTION & REFILL REPORT'}
             </div>
             <div className="doc-subtitle">
               {isKm
@@ -481,29 +489,41 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
         <table className="log-table">
           <thead>
             <tr>
-              <th style={{ width: '36px' }}>#</th>
+              <th style={{ width: '32px' }}>#</th>
               <th className="th-desc">{isKm ? 'ការពិពណ៌នា' : 'Description'}</th>
-              <th style={{ width: '90px', whiteSpace: 'nowrap' }}>{isKm ? 'ផ្លាកលេខ' : 'License Plate'}</th>
-              <th style={{ width: '110px' }}>{isKm ? 'អ្នកបើកបរ' : 'Driver Name'}</th>
-              <th style={{ width: '80px' }}>{isKm ? 'ម៉ោង' : 'Time'}</th>
-              <th style={{ width: '70px' }}>{isKm ? 'វេន' : 'Shift'}</th>
-              <th className="th-vol" style={{ width: '85px' }}>{isKm ? 'បរិមាណ (L)' : 'Volume (L)'}</th>
+              <th style={{ width: '85px', whiteSpace: 'nowrap' }}>{isKm ? 'ផ្លាកលេខ' : 'License Plate'}</th>
+              <th style={{ width: '100px' }}>{isKm ? 'អ្នកបើកបរ' : 'Driver Name'}</th>
+              <th style={{ width: '65px' }}>{isKm ? 'ម៉ោង' : 'Time'}</th>
+              <th style={{ width: '55px' }}>{isKm ? 'វេន' : 'Shift'}</th>
+              <th className="th-vol" style={{ width: '80px' }}>{isKm ? 'ដកប្រើ (Out L)' : 'Fuel Out (L)'}</th>
+              <th className="th-vol" style={{ width: '85px', color: '#15803d' }}>{isKm ? 'បំពេញ (In L)' : 'Oil In (L)'}</th>
             </tr>
           </thead>
           <tbody>
             {logs.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
+                <td colSpan={8} style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
                   {isKm ? 'គ្មានទិន្នន័យសម្រាប់លក្ខខណ្ឌដែលបានជ្រើសរើស' : 'No records found for the selected filter.'}
                 </td>
               </tr>
             ) : (
               logs.map((log, i) => {
                 const currentShift = normalizeShift(log.shift);
+                const rowOut = parseFloat(log.refill_liters || 0);
+                const rowIn = parseFloat(log.oil_in || 0);
+                const isOilInOnly = rowIn > 0 && rowOut === 0;
+
                 return (
-                  <tr key={log.id || i}>
+                  <tr key={log.id || i} style={{ background: isOilInOnly ? '#f0fdf4' : undefined }}>
                     <td className="num">{i + 1}</td>
-                    <td className="desc">{log.description || 'ឡានចាក់សាំង'}</td>
+                    <td className="desc">
+                      {log.description || (isOilInOnly ? (isKm ? 'នាំចូលប្រេងក្នុងស្តុក' : 'Stock Tank Refill Arrival') : (isKm ? 'ឡានចាក់សាំង' : 'Vehicle Refuel'))}
+                      {isOilInOnly && (
+                        <span style={{ marginLeft: '6px', fontSize: '7.5pt', background: '#dcfce7', color: '#15803d', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>
+                          {isKm ? 'បំពេញស្តុក' : 'STOCK IN'}
+                        </span>
+                      )}
+                    </td>
                     <td className="plate">{log.license_plate || log.code_abbr || '—'}</td>
                     <td className="driver">{log.driver_name || log.driver || log.driverName || '—'}</td>
                     <td className="time">
@@ -516,7 +536,12 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
                     <td className="shift-badge">
                       {currentShift === 'Morning' ? (isKm ? 'ព្រឹក' : 'Morning') : (isKm ? 'រសៀល' : 'Afternoon')}
                     </td>
-                    <td className="vol">{parseFloat(log.refill_liters || 0).toLocaleString()}</td>
+                    <td className="vol" style={{ color: rowOut > 0 ? '#0f172a' : '#94a3b8' }}>
+                      {rowOut > 0 ? rowOut.toLocaleString() : '—'}
+                    </td>
+                    <td className="vol" style={{ color: rowIn > 0 ? '#15803d' : '#94a3b8', fontWeight: rowIn > 0 ? 800 : 500 }}>
+                      {rowIn > 0 ? `+${rowIn.toLocaleString()}` : '—'}
+                    </td>
                   </tr>
                 );
               })
@@ -524,11 +549,14 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={6} style={{ textAlign: 'right', paddingRight: '12px', letterSpacing: '0.3px' }}>
-                {isKm ? 'សរុបសាំងប្រើប្រាស់ (TOTAL FUEL SPENT):' : 'TOTAL FUEL CONSUMED:'}
+              <td colSpan={6} style={{ textAlign: 'right', paddingRight: '12px', letterSpacing: '0.3px', fontWeight: 700 }}>
+                {isKm ? 'សរុបរួម (TOTAL VOLUMES):' : 'TOTAL VOLUMES:'}
               </td>
-              <td className="vol" style={{ fontSize: '10pt', color: '#0f172a' }}>
-                {totalLiters.toLocaleString()} L
+              <td className="vol" style={{ fontSize: '9.5pt', color: '#0f172a', fontWeight: 800 }}>
+                {totalOilOut.toLocaleString()} L
+              </td>
+              <td className="vol" style={{ fontSize: '9.5pt', color: '#15803d', fontWeight: 800 }}>
+                {totalOilIn > 0 ? `+${totalOilIn.toLocaleString()} L` : '0 L'}
               </td>
             </tr>
           </tfoot>
@@ -541,18 +569,28 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
         <table className="summary-table">
           <thead>
             <tr>
-              <th>{isKm ? 'ប្រតិបត្តិការសរុប' : 'TOTAL RECORDS'}</th>
+              <th>{isKm ? 'ប្រតិបត្តិការ' : 'RECORDS'}</th>
               <th>{isKm ? 'វេនព្រឹក (MORNING)' : 'MORNING SHIFT'}</th>
               <th>{isKm ? 'វេនរសៀល (AFTERNOON)' : 'AFTERNOON SHIFT'}</th>
-              <th>{isKm ? 'សរុបរួម (GRAND TOTAL)' : 'GRAND TOTAL'}</th>
+              <th>{isKm ? 'សរុបដកប្រើ (OIL OUT)' : 'TOTAL OUT'}</th>
+              <th style={{ color: '#15803d' }}>{isKm ? 'សរុបបំពេញ (OIL IN)' : 'TOTAL IN'}</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td>{logs.length} <span className="unit">{isKm ? 'ដង' : 'runs'}</span></td>
-              <td>{morningTotal.toLocaleString()} <span className="unit">L</span></td>
-              <td>{afternoonTotal.toLocaleString()} <span className="unit">L</span></td>
-              <td className="total-cell">{totalLiters.toLocaleString()} <span className="unit">L</span></td>
+              <td>
+                <div>{morningOut.toLocaleString()} <span className="unit">L (Out)</span></div>
+                {morningIn > 0 && <div style={{ fontSize: '7.5pt', color: '#15803d' }}>+{morningIn.toLocaleString()} L (In)</div>}
+              </td>
+              <td>
+                <div>{afternoonOut.toLocaleString()} <span className="unit">L (Out)</span></div>
+                {afternoonIn > 0 && <div style={{ fontSize: '7.5pt', color: '#15803d' }}>+{afternoonIn.toLocaleString()} L (In)</div>}
+              </td>
+              <td className="total-cell">{totalOilOut.toLocaleString()} <span className="unit">L</span></td>
+              <td className="total-cell" style={{ color: '#15803d', background: '#f0fdf4', borderColor: '#bbf7d0' }}>
+                {totalOilIn > 0 ? `+${totalOilIn.toLocaleString()}` : '0'} <span className="unit">L</span>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -566,22 +604,21 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
             <thead>
               <tr>
                 <th>{isKm ? 'ស្តុកដើមគ្រា (Opening Stock)' : 'Opening Stock'}</th>
-                <th>{isKm ? 'ដកប្រើប្រាស់ (Fuel Spent)' : 'Fuel Dispatched'}</th>
-                <th>{isKm ? 'ស្តុកនៅសល់ (Closing Stock)' : 'Closing Balance'}</th>
+                <th style={{ color: '#15803d' }}>{isKm ? '+ បំពេញស្តុក (Oil Refilled In)' : '+ Oil Refilled In'}</th>
+                <th style={{ color: '#b91c1c' }}>{isKm ? '- ដកប្រើប្រាស់ (Fuel Spent Out)' : '- Fuel Spent Out'}</th>
+                <th>{isKm ? '= តុល្យភាពចុងគ្រា (Closing Balance)' : '= Closing Balance'}</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td>{openingStock.toLocaleString()} L</td>
-                <td className="deduct">- {totalLiters.toLocaleString()} L</td>
+                <td style={{ color: '#15803d', fontWeight: 800 }}>+ {totalOilIn.toLocaleString()} L</td>
+                <td className="deduct">- {totalOilOut.toLocaleString()} L</td>
                 <td className="balance">{currentRemaining.toLocaleString()} L</td>
               </tr>
             </tbody>
           </table>
         </div>
-
-
-
       </div>
 
       {/* ── 3. BOTTOM BLOCK: Pinned Signatures + Official Footer ── */}
@@ -807,7 +844,16 @@ ${previewRef.current?.innerHTML || ''}
                 </div>
                 <div style={{ color: 'var(--text-sub)' }}>
                   {filteredLogs.length} {isKm ? 'ប្រតិបត្តិការ' : 'entries'} ·{' '}
-                  {filteredLogs.reduce((s, l) => s + (parseFloat(l.refill_liters) || 0), 0).toLocaleString()} L
+                  {isKm ? 'ដកប្រើ: ' : 'Out: '}
+                  <strong>{filteredLogs.reduce((s, l) => s + (parseFloat(l.refill_liters) || 0), 0).toLocaleString()} L</strong>
+                  {filteredLogs.reduce((s, l) => s + (parseFloat(l.oil_in) || 0), 0) > 0 && (
+                    <span>
+                      {' · '}{isKm ? 'បំពេញស្តុក: ' : 'In: '}
+                      <strong style={{ color: '#15803d' }}>
+                        +{filteredLogs.reduce((s, l) => s + (parseFloat(l.oil_in) || 0), 0).toLocaleString()} L
+                      </strong>
+                    </span>
+                  )}
                   {filteredLogs.length === 0 && (
                     <span style={{ display: 'block', marginTop: '3px', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
                       {isKm ? 'ផ្លាស់ប្ដូរកាលបរិច្ឆេទ ឬ វេន ដើម្បីឃើញទិន្នន័យ' : 'Change date or shift to match your log entries'}

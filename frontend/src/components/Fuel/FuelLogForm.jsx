@@ -228,17 +228,32 @@ export default function FuelLogForm({
               />
             </div>
 
-            <div className="form-group">
-              <label className="form-label">
-                {isKm ? 'ប្រេងចូល / បំពេញស្តុក (L)' : 'Oil In / Stock Top-up (L)'}
+            <div className="form-group" style={{ position: 'relative' }}>
+              <label className="form-label" style={{ color: 'var(--success)' }}>
+                <Droplets size={13} style={{ marginRight: 4, color: 'var(--success)' }} />
+                {isKm ? 'ប្រេងចូល / បំពេញស្តុក (Oil In)' : 'Oil In / Stock Refill (L)'}
+                <span style={{
+                  marginLeft: '7px', fontSize: '0.67rem', fontWeight: 700,
+                  background: 'var(--success-subtle)', color: 'var(--success)',
+                  border: '1px solid var(--success-border)',
+                  borderRadius: '4px', padding: '1px 6px', verticalAlign: 'middle'
+                }}>
+                  {isKm ? 'បំពេញស្តុក' : 'STOCK IN'}
+                </span>
               </label>
               <input
                 type="number" step="any" min="0"
                 className="form-control"
-                placeholder={isKm ? 'ឧ. 1000' : 'e.g. 1000'}
+                placeholder={isKm ? 'ឧ. 4000 (ប្រសិនបើមានប្រេងចូល)' : 'e.g. 4000 (only if fuel delivered today)'}
                 value={oilIn}
                 onChange={e => setOilIn(e.target.value)}
+                style={{ borderColor: oilIn ? 'var(--success-border)' : undefined }}
               />
+              {oilIn && parseFloat(oilIn) > 0 && (
+                <div style={{ marginTop: '4px', fontSize: '0.72rem', color: 'var(--success)', fontWeight: 600 }}>
+                  ✅ {isKm ? `ប្រេង +${parseFloat(oilIn).toLocaleString()} L នឹងត្រូវបន្ថែមទៅស្តុក` : `+${parseFloat(oilIn).toLocaleString()} L will be added to tank stock`}
+                </div>
+              )}
             </div>
           </div>
 

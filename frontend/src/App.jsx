@@ -237,11 +237,13 @@ export default function App() {
   const handleAddFuelLog = (newLog) => {
     setFuelLogs(prev => [newLog, ...prev]);
 
-    // Deduct oil spent from station stock
+    // Deduct oil spent (refill_liters) and add oil received (oil_in) to station stock
     setFuelStations(prevStations =>
       prevStations.map(station => {
         if (station.id === newLog.station_id) {
-          const updatedStock = Math.max(0, station.current_stock_liters - newLog.refill_liters);
+          const oilOut = parseFloat(newLog.refill_liters) || 0;
+          const oilIn  = parseFloat(newLog.oil_in) || 0;
+          const updatedStock = Math.max(0, station.current_stock_liters - oilOut + oilIn);
           return {
             ...station,
             current_stock_liters: updatedStock,
@@ -293,10 +295,12 @@ export default function App() {
     const log = fuelLogs.find(l => l.id === logId);
     if (!log) return;
     setFuelLogs(prev => prev.filter(l => l.id !== logId));
-    // Restore the spent oil back to station stock
+    // Reverse the effect: restore oil_out to stock, remove oil_in from stock
+    const oilOut = parseFloat(log.refill_liters) || 0;
+    const oilIn  = parseFloat(log.oil_in) || 0;
     setFuelStations(prev => prev.map(s => {
       if (s.id === log.station_id) {
-        const restored = s.current_stock_liters + log.refill_liters;
+        const restored = Math.max(0, s.current_stock_liters + oilOut - oilIn);
         return { ...s, current_stock_liters: restored, status: restored < s.reorder_threshold_liters ? 'Reorder Needed' : 'Normal' };
       }
       return s;
@@ -316,8 +320,13 @@ export default function App() {
     const old = fuelLogs.find(l => l.id === updatedLog.id);
     if (!old) return;
     setFuelLogs(prev => prev.map(l => l.id === updatedLog.id ? updatedLog : l));
-    // Adjust stock: restore old spend, deduct new spend
-    const delta = old.refill_liters - updatedLog.refill_liters;
+    // Adjust stock: reverse old effect (old.oil_out deducted, old.oil_in added)
+    //               then apply new effect (new.oil_out deduct, new.oil_in add)
+    const oldOut = parseFloat(old.refill_liters) || 0;
+    const oldIn  = parseFloat(old.oil_in) || 0;
+    const newOut = parseFloat(updatedLog.refill_liters) || 0;
+    const newIn  = parseFloat(updatedLog.oil_in) || 0;
+    const delta  = (oldOut - oldIn) - (newOut - newIn); // net change to add back
     setFuelStations(prev => prev.map(s => {
       if (s.id === updatedLog.station_id) {
         const adjusted = Math.max(0, s.current_stock_liters + delta);
