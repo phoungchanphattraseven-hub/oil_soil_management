@@ -29,6 +29,13 @@ function getStoredStaff() {
   } catch { return []; }
 }
 
+function getStoredArchives() {
+  try {
+    const raw = localStorage.getItem('saved_fuel_table_archives');
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
 export default function App() {
   const [activeRole, setActiveRole] = useState('admin');
   const [lang, setLang] = useState(() => {
@@ -45,6 +52,13 @@ export default function App() {
   const [abbrCodes, setAbbrCodes] = useState(getStoredAbbrCodes);
   const [drivers, setDrivers] = useState(getStoredDrivers);
   const [staff, setStaff] = useState(getStoredStaff);
+  const [savedArchives, setSavedArchives] = useState(getStoredArchives);
+
+  // Sync savedArchives to localStorage
+  useEffect(() => {
+    try { localStorage.setItem('saved_fuel_table_archives', JSON.stringify(savedArchives)); }
+    catch (e) { console.error(e); }
+  }, [savedArchives]);
 
   // Sync theme to document element and localStorage
   useEffect(() => {
@@ -336,9 +350,11 @@ export default function App() {
     }));
   };
 
-  // Handler: Clear active fuel logs
+  // Handler: Clear active fuel logs (archives live table and clears backend)
   const handleClearFuelLogs = () => {
     setFuelLogs([]);
+    fetch(`${API_BASE_URL}/fuel/logs/clear`, { method: 'DELETE' })
+      .catch(e => console.log('Backend clear API offline, cleared locally.'));
   };
 
   // Handler: Add new soil log
@@ -424,6 +440,8 @@ export default function App() {
                 onDeleteFuelLog={handleDeleteFuelLog}
                 onEditFuelLog={handleEditFuelLog}
                 onClearFuelLogs={handleClearFuelLogs}
+                savedArchives={savedArchives}
+                setSavedArchives={setSavedArchives}
                 lang={lang}
               />
             }

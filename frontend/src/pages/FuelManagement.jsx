@@ -36,6 +36,8 @@ export default function FuelManagement({
   onDeleteFuelLog,
   onEditFuelLog,
   onClearFuelLogs,
+  savedArchives,
+  setSavedArchives,
   lang = 'km'
 }) {
   const [activeSubTab, setActiveSubTab] = useState('daily'); // 'daily' | 'calendar' | 'stations' | 'fleet' | 'sop' | 'archives'
@@ -306,6 +308,8 @@ export default function FuelManagement({
             onDateChange={setSelectedDate}
             onOpenLogForm={handleOpenLogFormForDate}
             initialViewMode="LIVE"
+            savedArchives={savedArchives}
+            setSavedArchives={setSavedArchives}
           />
         </div>
       )}
@@ -427,6 +431,8 @@ export default function FuelManagement({
             onDeleteDriver={onDeleteDriver}
             lang={lang}
             initialViewMode="ARCHIVE"
+            savedArchives={savedArchives}
+            setSavedArchives={setSavedArchives}
           />
         </div>
       )}
