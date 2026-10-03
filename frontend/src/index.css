@@ -1158,12 +1158,10 @@ select.form-control option {
   flex-direction: column;
   min-width: 0;
   min-height: 100vh;
-  overflow-x: hidden;
 }
 
 .app-main-content {
   flex: 1;
-  overflow-y: auto;
   padding-bottom: 24px;
 }
 
@@ -1178,9 +1176,9 @@ select.form-control option {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 90;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 900 !important;
 }
 
 .header-left {
