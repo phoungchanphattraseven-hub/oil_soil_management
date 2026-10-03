@@ -1,3 +1,4 @@
+import React, { useState, useRef } from 'react';
 import {
   FileText, X, Printer, Download, Building2,
   MapPin, Calendar, Clock, User, Briefcase,
