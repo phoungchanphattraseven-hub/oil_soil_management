@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Shield, Clock, Bell, Sun, Moon, Menu } from 'lucide-react';
+import { Shield, Clock, Bell, Sun, Moon, Menu } from 'lucide-react';
 import { MOCK_USERS } from '../../data/mockData';
 import { translations } from '../../data/translations';
 
@@ -21,23 +21,32 @@ export default function Header({
     weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
   });
 
+  const toggleLanguage = () => {
+    setLang(lang === 'km' ? 'en' : 'km');
+  };
+
+  const toggleRole = () => {
+    setActiveRole(activeRole === 'admin' ? 'phattra' : 'admin');
+  };
+
   return (
     <header className="app-header">
-      {/* Left: Menu & Brand/Date */}
+      {/* Left: Menu & Brand */}
       <div className="header-left">
         {setSidebarVisible && (
           <button
-            className="sidebar-toggle-btn"
+            className="sidebar-toggle-btn hide-on-desktop"
             onClick={() => setSidebarVisible(!isSidebarVisible)}
             title={lang === 'km' ? 'បិទ/បើក របារចំហៀង' : 'Toggle Sidebar'}
+            aria-label="Toggle Navigation"
           >
-            <Menu size={20} />
+            <Menu size={19} />
           </button>
         )}
 
         <div className="mobile-app-brand">
           <div className="mobile-brand-icon">
-            <Shield size={16} color="#ffffff" />
+            <Shield size={15} color="#ffffff" />
           </div>
           <span className="mobile-brand-title">{t.appName}</span>
         </div>
@@ -50,48 +59,41 @@ export default function Header({
 
       {/* Right: Controls */}
       <div className="header-right">
-        {/* Theme Toggle */}
+        {/* Language Toggle: Single compact button on mobile */}
+        <button
+          className="header-pill-toggle"
+          onClick={toggleLanguage}
+          title={lang === 'km' ? 'Switch to English' : 'ប្តូរទៅភាសាខ្មែរ'}
+        >
+          <span style={{ fontSize: '0.85rem' }}>{lang === 'km' ? '🇰🇭' : '🇬🇧'}</span>
+          <span style={{ fontSize: '0.7rem', fontWeight: 700 }}>{lang.toUpperCase()}</span>
+        </button>
+
+        {/* Theme Toggle (Sun / Moon) */}
         {setTheme && (
           <button
-            className="header-icon-btn theme-btn"
+            className="header-icon-btn"
             onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
             title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
           >
             {theme === 'light' ? <Sun size={15} color="var(--fuel-accent)" /> : <Moon size={15} color="var(--primary)" />}
-            <span className="hide-on-mobile">{theme === 'light' ? (lang === 'km' ? 'ពន្លឺ' : 'Light') : (lang === 'km' ? 'ងងឹត' : 'Dark')}</span>
           </button>
         )}
 
-        {/* Language Toggle */}
-        <div className="header-pill-group">
-          {['km', 'en'].map(l => (
-            <button
-              key={l}
-              onClick={() => setLang(l)}
-              className={`pill-btn ${lang === l ? 'active' : ''}`}
-            >
-              {l === 'km' ? '🇰🇭' : '🇬🇧'} <span className="hide-on-mobile">{l === 'km' ? 'KM' : 'EN'}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Role Toggle (Desktop) */}
+        {/* Desktop Role Switcher */}
         <div className="header-pill-group hide-on-mobile">
-          {[
-            { key: 'admin', icon: <Shield size={11} color="var(--primary)" />, label: t.admin },
-            { key: 'phattra', icon: <User size={11} color="var(--fuel-accent)" />, label: t.phattra }
-          ].map(({ key, icon, label }) => (
+          {['admin', 'phattra'].map((key) => (
             <button
               key={key}
               onClick={() => setActiveRole(key)}
               className={`pill-btn ${activeRole === key ? 'active' : ''}`}
             >
-              {icon} <span>{label}</span>
+              <span>{key === 'admin' ? t.admin : t.phattra}</span>
             </button>
           ))}
         </div>
 
-        {/* Bell */}
+        {/* Alert Bell */}
         {alertCount > 0 && (
           <div className="header-bell-wrapper">
             <div className="header-bell-icon">
@@ -103,14 +105,11 @@ export default function Header({
           </div>
         )}
 
-        {/* Separator Desktop */}
-        <div className="header-divider hide-on-mobile" />
-
-        {/* User Avatar (clickable on mobile to toggle role) */}
+        {/* User Avatar (click to toggle role on mobile) */}
         <button
           className="user-profile-btn"
-          onClick={() => setActiveRole(activeRole === 'admin' ? 'phattra' : 'admin')}
-          title={lang === 'km' ? 'ចុចដើម្បីប្តូរតួនាទី' : 'Click to switch role'}
+          onClick={toggleRole}
+          title={lang === 'km' ? `តួនាទី៖ ${currentUser.name} (ចុចដើម្បីប្តូរ)` : `Role: ${currentUser.name} (Tap to switch)`}
         >
           <img
             src={currentUser.avatar}
@@ -118,9 +117,7 @@ export default function Header({
             className="user-avatar-img"
           />
           <div className="user-info-text hide-on-mobile">
-            <div className="user-name">
-              {currentUser.name}
-            </div>
+            <div className="user-name">{currentUser.name}</div>
             <div className="user-role">
               {lang === 'km' ? currentUser.roleKhmer : (activeRole === 'admin' ? t.adminRole : t.phattraRole)}
             </div>

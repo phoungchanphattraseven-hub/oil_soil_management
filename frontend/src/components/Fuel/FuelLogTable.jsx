@@ -422,7 +422,7 @@ export default function FuelLogTable({
                 placeholder={lang === 'km' ? 'ផ្លាក / អ្នកបើកបរ / ការពិពណ៌នា...' : 'Plate / driver / desc...'}
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                style={{ paddingLeft: '30px', height: '32px', fontSize: '0.78rem', width: '190px' }}
+                style={{ paddingLeft: '30px', height: '32px', fontSize: '0.78rem', minWidth: '140px', flex: '1 1 auto' }}
               />
             </div>
 
@@ -431,7 +431,7 @@ export default function FuelLogTable({
               className="form-control"
               value={stationFilter}
               onChange={e => setStationFilter(e.target.value)}
-              style={{ height: '32px', fontSize: '0.78rem', width: '140px' }}
+              style={{ height: '32px', fontSize: '0.78rem', minWidth: '120px', flex: '1 1 auto' }}
             >
               <option value="ALL">{lang === 'km' ? 'គ្រប់ស្ថានីយ៍' : 'All Stations'}</option>
               {uniqueStations.map(st => <option key={st} value={st}>{st}</option>)}
@@ -542,7 +542,7 @@ export default function FuelLogTable({
       </div>
 
       {/* ── Main Table ── */}
-      <div className="data-table-wrapper" style={{ border: 'none', borderRadius: '0', borderTop: '1px solid var(--border-subtle)' }}>
+      <div className="data-table-wrapper hide-on-mobile" style={{ border: 'none', borderRadius: '0', borderTop: '1px solid var(--border-subtle)' }}>
         <table className="data-table">
           <thead>
             <tr>
@@ -710,6 +710,81 @@ export default function FuelLogTable({
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* ── Mobile Native Cards List (Shown only on Mobile) ── */}
+      <div className="mobile-logs-list hide-on-desktop">
+        {filteredLogs.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-muted)' }}>
+            <Fuel size={28} style={{ opacity: 0.3, margin: '0 auto 8px' }} />
+            <div style={{ fontSize: '0.85rem' }}>{t.noData}</div>
+          </div>
+        ) : (
+          filteredLogs.map((log) => (
+            <div key={log.id} className="mobile-log-card">
+              <div className="mobile-log-card-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span className="badge badge-info" style={{ fontSize: '0.74rem', fontWeight: 800 }}>
+                    {log.code_abbr || 'N/A'}
+                  </span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                    {log.station_name || 'Station'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                  <Clock size={11} /> {log.time_in ? log.time_in.substring(11, 16) : ''}
+                </div>
+              </div>
+
+              <div className="mobile-log-card-body">
+                <div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-main)' }}>
+                    {log.driver_name || log.description || (lang === 'km' ? 'ឡានចាក់សាំង' : 'Refuel')}
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                    {log.log_date || log.time_in?.substring(0, 10)} · {log.logged_by || 'Phattra'}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--fuel-accent)', lineHeight: 1 }}>
+                    -{log.refill_liters} <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>L</span>
+                  </div>
+                  {log.shift && (
+                    <span className="badge badge-neutral" style={{ fontSize: '0.62rem', marginTop: '3px', display: 'inline-block' }}>
+                      {log.shift}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="mobile-log-card-footer">
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
+                  {log.signature_data_url ? (
+                    <span style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                      <CheckCircle2 size={11} /> {lang === 'km' ? 'មានហត្ថលេខា' : 'Signed'}
+                    </span>
+                  ) : null}
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => handleStartEdit(log)}
+                    className="mobile-action-btn edit"
+                  >
+                    <Pencil size={12} color="var(--primary)" />
+                    <span>{lang === 'km' ? 'កែប្រែ' : 'Edit'}</span>
+                  </button>
+                  <button
+                    onClick={() => handleDeleteLog(log.id)}
+                    className="mobile-action-btn delete"
+                  >
+                    <Trash2 size={12} />
+                    <span>{lang === 'km' ? 'លុប' : 'Delete'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Table Footer */}

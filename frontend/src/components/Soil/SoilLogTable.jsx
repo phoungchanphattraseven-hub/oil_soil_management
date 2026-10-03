@@ -152,7 +152,7 @@ export default function SoilLogTable({ logs = [], onDelete, onEdit, abbrCodes = 
         </div>
       )}
 
-      <div className="data-table-wrapper">
+      <div className="data-table-wrapper hide-on-mobile">
         <table className="data-table">
           <thead>
             <tr>
@@ -258,6 +258,94 @@ export default function SoilLogTable({ logs = [], onDelete, onEdit, abbrCodes = 
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* ── Mobile Native Cards List (Shown only on Mobile) ── */}
+      <div className="mobile-logs-list hide-on-desktop">
+        {logs.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-muted)' }}>
+            <HardHat size={28} style={{ opacity: 0.3, margin: '0 auto 8px' }} />
+            <div style={{ fontSize: '0.85rem' }}>{t.noData}</div>
+          </div>
+        ) : (
+          logs.map((log) => (
+            <div key={log.id} className="mobile-log-card">
+              <div className="mobile-log-card-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span className="badge badge-info" style={{ fontSize: '0.74rem', fontWeight: 800 }}>
+                    {log.code_abbr || 'SL-N/A'}
+                  </span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                    {log.station_name}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  {log.log_date}
+                </div>
+              </div>
+
+              <div className="mobile-log-card-body">
+                <div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-main)' }}>
+                    {log.trip_count} {t.tripsUnit} ({log.cubic_meters_per_trip} m³/{t.tripsUnit})
+                  </div>
+                  {log.staff_decisions && (
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-sub)', marginTop: '3px' }}>
+                      <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{log.logged_by || 'Phattra'}: </span>
+                      {log.staff_decisions}
+                    </div>
+                  )}
+                  {log.issues_description && (
+                    <div style={{ fontSize: '0.7rem', color: '#fca5a5', marginTop: '2px' }}>
+                      ⚠ {log.issues_description}
+                    </div>
+                  )}
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--soil-accent)', lineHeight: 1 }}>
+                    {log.total_cubic_meters} <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>m³</span>
+                  </div>
+                  {parseFloat(log.scrap_sales_amount) > 0 && (
+                    <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#fbbf24', marginTop: '3px' }}>
+                      +${log.scrap_sales_amount}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mobile-log-card-footer">
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
+                  {log.receipt_photo_url && (
+                    <a
+                      href={log.receipt_photo_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                    >
+                      <ImageIcon size={11} /> {t.receiptLink}
+                    </a>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => setEditingLog({ ...log })}
+                    className="mobile-action-btn edit"
+                  >
+                    <Pencil size={12} color="var(--soil-accent)" />
+                    <span>{lang === 'km' ? 'កែប្រែ' : 'Edit'}</span>
+                  </button>
+                  <button
+                    onClick={() => onDelete && onDelete(log.id)}
+                    className="mobile-action-btn delete"
+                  >
+                    <Trash2 size={12} />
+                    <span>{lang === 'km' ? 'លុប' : 'Delete'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

@@ -49,63 +49,68 @@ export default function PwaInstallPrompt({ lang = 'km' }) {
   const isKm = lang === 'km';
 
   return (
-    <aside
+    <div
+      className="pwa-install-toast"
       aria-label="PWA Install Prompt"
       style={{
         position: 'fixed',
-        top: '64px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: 'calc(100% - 24px)',
-        maxWidth: '460px',
-        zIndex: 1100,
-        background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.96), rgba(15, 23, 42, 0.98))',
+        bottom: 'calc(68px + env(safe-area-inset-bottom, 10px))',
+        left: '12px',
+        right: '12px',
+        maxWidth: '440px',
+        margin: '0 auto',
+        zIndex: 999,
+        background: 'rgba(15, 23, 42, 0.95)',
         backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(79, 125, 245, 0.4)',
-        boxShadow: '0 12px 36px rgba(0, 0, 0, 0.45), 0 0 20px rgba(79, 125, 245, 0.25)',
-        borderRadius: '16px',
-        padding: '12px 14px',
+        WebkitBackdropFilter: 'blur(16px)',
+        border: '1px solid rgba(79, 125, 245, 0.35)',
+        boxShadow: '0 8px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(79, 125, 245, 0.2)',
+        borderRadius: '14px',
+        padding: '10px 12px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '12px',
-        animation: 'slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+        gap: '10px',
+        animation: 'slideUpModal 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
         <img
           src="/pwa-192x192.png"
           alt="App Icon"
           style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '10px',
+            width: '38px',
+            height: '38px',
+            borderRadius: '9px',
             objectFit: 'cover',
-            boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
             flexShrink: 0
           }}
         />
         <div style={{ minWidth: 0 }}>
           <div style={{
-            fontSize: '0.82rem',
+            fontSize: '0.8rem',
             fontWeight: 700,
             color: '#ffffff',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px'
+            gap: '5px'
           }}>
             <Smartphone size={13} color="var(--primary)" />
             <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {isKm ? 'ដំឡើងកម្មវិធីទូរស័ព្ទ (Mini App)' : 'Install Mobile Mini App'}
+              {isKm ? 'ដំឡើងកម្មវិធី Mini App' : 'Install Mini App'}
             </span>
           </div>
           <div style={{
-            fontSize: '0.71rem',
+            fontSize: '0.68rem',
             color: 'var(--text-muted)',
-            marginTop: '2px',
-            lineHeight: 1.2
+            marginTop: '1px',
+            lineHeight: 1.1,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
           }}>
-            {isKm ? 'ប្រើប្រាស់លឿនជាងមុន និងដំណើរការក្រៅបណ្តាញ' : 'Fast, native-like offline experience'}
+            {isKm ? 'បន្ថែមទៅលើអេក្រង់ដើមទូរស័ព្ទ' : 'Add to home screen'}
           </div>
         </div>
       </div>
@@ -118,17 +123,17 @@ export default function PwaInstallPrompt({ lang = 'km' }) {
             color: '#fff',
             border: 'none',
             borderRadius: '8px',
-            padding: '7px 12px',
-            fontSize: '0.76rem',
+            padding: '6px 12px',
+            fontSize: '0.74rem',
             fontWeight: 700,
             display: 'flex',
             alignItems: 'center',
-            gap: '5px',
+            gap: '4px',
             cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(79, 125, 245, 0.4)'
+            boxShadow: '0 2px 6px rgba(79, 125, 245, 0.35)'
           }}
         >
-          <Download size={13} />
+          <Download size={12} />
           <span>{isKm ? 'ដំឡើង' : 'Install'}</span>
         </button>
         <button
@@ -137,7 +142,7 @@ export default function PwaInstallPrompt({ lang = 'km' }) {
             background: 'transparent',
             border: 'none',
             color: 'var(--text-muted)',
-            padding: '6px',
+            padding: '4px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -145,9 +150,9 @@ export default function PwaInstallPrompt({ lang = 'km' }) {
           }}
           title={isKm ? 'បិទ' : 'Dismiss'}
         >
-          <X size={16} />
+          <X size={15} />
         </button>
       </div>
-    </aside>
+    </div>
   );
 }
