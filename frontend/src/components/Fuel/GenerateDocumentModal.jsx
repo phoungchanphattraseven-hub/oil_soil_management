@@ -1,9 +1,9 @@
-import React, { useState, useRef } from 'react';
 import {
   FileText, X, Printer, Download, Building2,
   MapPin, Calendar, Clock, User, Briefcase,
-  Fuel, CheckSquare, ChevronRight
+  Fuel, CheckSquare, ChevronRight, FileSpreadsheet
 } from 'lucide-react';
+import { exportFuelLogsToExcel } from '../../utils/excelExport';
 
 /* ─── Print Styles (injected via <style> in the print frame) ──────── */
 const PRINT_CSS = `
@@ -873,16 +873,23 @@ ${previewRef.current?.innerHTML || ''}
         </div>
 
         {/* Footer Actions */}
-        <div className="modal-footer">
+        <div className="modal-footer" style={{ flexWrap: 'wrap', gap: '8px' }}>
           {previewOpen ? (
             <>
               <button onClick={handlePrint} className="btn btn-primary" style={{ flex: 1 }}>
                 <Printer size={15} />
                 {isKm ? 'បោះពុម្ព / រក្សាទុក PDF' : 'Print / Save as PDF'}
               </button>
-              <button onClick={handlePrint} className="btn btn-secondary">
-                <Download size={14} />
-                {isKm ? 'ទាញយក' : 'Download'}
+              <button
+                onClick={() => {
+                  const filename = meta.docDate ? `Fuel_Log_Document_${meta.docDate}.xlsx` : `Fuel_Log_Document.xlsx`;
+                  exportFuelLogsToExcel(filteredLogs, filename, lang);
+                }}
+                className="btn btn-success"
+                style={{ background: '#10b981', color: '#ffffff', borderColor: '#059669' }}
+              >
+                <FileSpreadsheet size={15} />
+                {isKm ? 'ទាញយក Excel' : 'Export Excel'}
               </button>
             </>
           ) : (
@@ -891,13 +898,24 @@ ${previewRef.current?.innerHTML || ''}
                 <ChevronRight size={15} />
                 {isKm ? 'មើលឯកសារ + បោះពុម្ព' : 'Preview & Print'}
               </button>
+              <button
+                onClick={() => {
+                  const filename = meta.docDate ? `Fuel_Log_Document_${meta.docDate}.xlsx` : `Fuel_Log_Document.xlsx`;
+                  exportFuelLogsToExcel(filteredLogs, filename, lang);
+                }}
+                className="btn btn-success"
+                style={{ background: '#10b981', color: '#ffffff', borderColor: '#059669' }}
+              >
+                <FileSpreadsheet size={15} />
+                {isKm ? 'ទាញយក Excel' : 'Export Excel'}
+              </button>
               <button onClick={handlePrint} className="btn btn-secondary">
                 <Printer size={14} />
-                {isKm ? 'បោះពុម្ពភ្លាម' : 'Print Now'}
+                {isKm ? 'បោះពុម្ព' : 'Print'}
               </button>
             </>
           )}
-          <button onClick={onClose} className="btn btn-ghost" style={{ minWidth: '80px' }}>
+          <button onClick={onClose} className="btn btn-ghost" style={{ minWidth: '70px' }}>
             {isKm ? 'បិទ' : 'Close'}
           </button>
         </div>

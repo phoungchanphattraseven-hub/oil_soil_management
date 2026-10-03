@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { HardHat, Image as ImageIcon, UserCheck, Trash2, Pencil, X, Check } from 'lucide-react';
+import { HardHat, Image as ImageIcon, UserCheck, Trash2, Pencil, X, Check, FileSpreadsheet } from 'lucide-react';
 import { translations } from '../../data/translations';
 import AbbrCodeSelector from '../Common/AbbrCodeSelector';
+import { exportSoilLogsToExcel } from '../../utils/excelExport';
 
 function formatTimeForInput(val) {
   if (!val) return '07:00';
@@ -30,16 +31,28 @@ export default function SoilLogTable({ logs = [], onDelete, onEdit, abbrCodes = 
 
   return (
     <div className="card" style={{ padding: '20px', marginTop: '20px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
         <h3 style={{ fontSize: '0.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ padding: '6px', background: 'var(--soil-subtle)', borderRadius: 'var(--radius-xs)', color: 'var(--soil-accent)', display: 'flex' }}>
             <HardHat size={16} />
           </div>
           <span>{t.soilLogsTitle}</span>
         </h3>
-        <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 600 }}>
-          {logs.length} {lang === 'km' ? 'កំណត់ត្រា' : 'records'}
-        </span>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            onClick={() => exportSoilLogsToExcel(logs, `Soil_Logs_Archive_${new Date().toISOString().substring(0, 10)}.xlsx`, lang)}
+            className="btn btn-success btn-sm"
+            style={{ height: '32px', fontSize: '0.76rem', background: '#10b981', color: '#ffffff', borderColor: '#059669' }}
+            title={lang === 'km' ? 'ទាញយកទិន្នន័យចាក់ដីជាឯកសារ Excel (.xlsx)' : 'Export soil logs as Excel (.xlsx)'}
+          >
+            <FileSpreadsheet size={13} />
+            <span>{lang === 'km' ? 'ទាញយក Excel (.xlsx)' : 'Export Excel (.xlsx)'}</span>
+          </button>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 600 }}>
+            {logs.length} {lang === 'km' ? 'កំណត់ត្រា' : 'records'}
+          </span>
+        </div>
       </div>
 
       {/* Edit Modal for Soil Log */}

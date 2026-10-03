@@ -3,12 +3,13 @@ import {
   Fuel, FileSignature, Trash2, Pencil, X, Check,
   Search, Calendar, RotateCcw, Save, Archive,
   Layers, CheckCircle2, BarChart2, Zap, Filter, FileText,
-  ChevronLeft, ChevronRight, Plus, Clock
+  ChevronLeft, ChevronRight, Plus, Clock, FileSpreadsheet, Download
 } from 'lucide-react';
 import { translations } from '../../data/translations';
 import AbbrCodeSelector from '../Common/AbbrCodeSelector';
 import GenerateDocumentModal from './GenerateDocumentModal';
 import { formatDateKhmer, formatDateEnglish } from './FuelDateMaster';
+import { exportFuelLogsToExcel } from '../../utils/excelExport';
 
 function formatDatetimeForInput(val) {
   if (!val) return '';
@@ -437,6 +438,20 @@ export default function FuelLogTable({
               {uniqueStations.map(st => <option key={st} value={st}>{st}</option>)}
             </select>
 
+            {/* Export Excel Button */}
+            <button
+              onClick={() => {
+                const fname = dateFilter ? `Fuel_Logs_${dateFilter}.xlsx` : `Fuel_Logs_Export_${new Date().toISOString().substring(0, 10)}.xlsx`;
+                exportFuelLogsToExcel(filteredLogs.length > 0 ? filteredLogs : logs, fname, lang);
+              }}
+              className="btn btn-success btn-sm"
+              style={{ height: '32px', fontSize: '0.76rem', whiteSpace: 'nowrap', background: '#10b981', color: '#ffffff', borderColor: '#059669' }}
+              title={lang === 'km' ? 'ទាញយកទិន្នន័យជាឯកសារ Excel (.xlsx)' : 'Export data as Excel (.xlsx) spreadsheet'}
+            >
+              <FileSpreadsheet size={13} />
+              <span>{lang === 'km' ? 'ទាញយក Excel' : 'Export Excel'}</span>
+            </button>
+
             {/* Quick Log Fuel button if passed */}
             {onOpenLogForm && (
               <button
@@ -480,7 +495,7 @@ export default function FuelLogTable({
               className="form-control"
               value={selectedArchiveId}
               onChange={e => setSelectedArchiveId(e.target.value)}
-              style={{ flex: 1, minWidth: '220px', height: '34px', fontSize: '0.8rem', maxWidth: '360px' }}
+              style={{ flex: 1, minWidth: '200px', height: '34px', fontSize: '0.8rem', maxWidth: '340px' }}
             >
               <option value="">{lang === 'km' ? '— ជ្រើស —' : '— Select Saved Date —'}</option>
               {savedArchives.map(arch => (
@@ -489,6 +504,22 @@ export default function FuelLogTable({
                 </option>
               ))}
             </select>
+
+            {/* Export Archive as Excel Button */}
+            <button
+              onClick={() => {
+                const exportLogs = activeArchive ? activeArchive.logs : (filteredLogs.length > 0 ? filteredLogs : logs);
+                const fname = activeArchive ? `Fuel_Archive_${activeArchive.date}.xlsx` : `Fuel_Archive_Export.xlsx`;
+                exportFuelLogsToExcel(exportLogs, fname, lang);
+              }}
+              className="btn btn-success btn-sm"
+              style={{ height: '34px', fontSize: '0.78rem', whiteSpace: 'nowrap', background: '#10b981', color: '#ffffff', borderColor: '#059669' }}
+              title={lang === 'km' ? 'ទាញយកប័ណ្ណសារដែលជ្រើសរើសជាឯកសារ Excel (.xlsx)' : 'Export selected archive to Excel (.xlsx)'}
+            >
+              <FileSpreadsheet size={14} />
+              <span>{lang === 'km' ? 'ទាញយកប័ណ្ណជា Excel (.xlsx)' : 'Export Archive to Excel (.xlsx)'}</span>
+            </button>
+
             {activeArchive && (
               <button onClick={() => handleDeleteArchive(activeArchive.id)} className="btn btn-secondary btn-sm" style={{ color: 'var(--danger)', borderColor: 'var(--danger-border)' }}>
                 <Trash2 size={13} /> {lang === 'km' ? 'លុប' : 'Delete'}
