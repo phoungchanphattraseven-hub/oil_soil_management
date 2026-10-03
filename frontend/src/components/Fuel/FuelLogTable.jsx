@@ -703,11 +703,24 @@ export default function FuelLogTable({
                 </td>
 
                 {/* Sign */}
-                <td style={{ textAlign: 'center' }}>
-                  {log.signature_url ? (
-                    <a href={log.signature_url} target="_blank" rel="noopener noreferrer"
-                      style={{ color: 'var(--success)', display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.75rem', fontWeight: 600 }}>
-                      <FileSignature size={13} /> Sign
+                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                  {log.signature_url || log.signature_data_url ? (
+                    <a
+                      href={log.signature_url || log.signature_data_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={lang === 'km' ? 'មើលរូបហត្ថលេខា' : 'View Signature Image'}
+                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <img
+                        src={log.signature_url || log.signature_data_url}
+                        alt="Signature"
+                        style={{
+                          maxHeight: '26px', maxWidth: '75px', objectFit: 'contain',
+                          background: '#ffffff', borderRadius: '4px', padding: '2px 4px',
+                          border: '1px solid var(--border-subtle, #cbd5e1)', boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                        }}
+                      />
                     </a>
                   ) : (
                     <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>—</span>

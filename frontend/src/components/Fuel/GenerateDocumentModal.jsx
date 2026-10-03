@@ -520,12 +520,13 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
               <th style={{ width: '55px' }}>{isKm ? 'វេន' : 'Shift'}</th>
               <th className="th-vol" style={{ width: '80px' }}>{isKm ? 'ដកប្រើ (Out L)' : 'Fuel Out (L)'}</th>
               <th className="th-vol" style={{ width: '85px', color: '#15803d' }}>{isKm ? 'បំពេញ (In L)' : 'Oil In (L)'}</th>
+              <th style={{ width: '75px', textAlign: 'center' }}>{isKm ? 'ហត្ថលេខា' : 'Signature'}</th>
             </tr>
           </thead>
           <tbody>
             {logs.length === 0 ? (
               <tr>
-                <td colSpan={8} style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
+                <td colSpan={9} style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
                   {isKm ? 'គ្មានទិន្នន័យសម្រាប់លក្ខខណ្ឌដែលបានជ្រើសរើស' : 'No records found for the selected filter.'}
                 </td>
               </tr>
@@ -544,7 +545,7 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
                     <>
                       {/* Section label row */}
                       <tr>
-                        <td colSpan={8} style={{
+                        <td colSpan={9} style={{
                           background: '#dcfce7',
                           borderTop: '2px solid #16a34a',
                           borderBottom: '1px solid #bbf7d0',
@@ -562,6 +563,7 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
                         const rowOut = parseFloat(log.refill_liters || 0);
                         const rowIn = parseFloat(log.oil_in || 0);
                         const currentShift = normalizeShift(log.shift);
+                        const sigImg = log.signature_url || log.signature_data_url;
                         return (
                           <tr key={`in-${log.id || i}`} style={{ background: '#f0fdf4' }}>
                             <td className="num" style={{ color: '#15803d', fontWeight: 800 }}>{i + 1}</td>
@@ -593,6 +595,17 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
                             <td className="vol" style={{ color: '#15803d', fontWeight: 900, fontSize: '10pt' }}>
                               +{rowIn.toLocaleString()}
                             </td>
+                            <td style={{ textAlign: 'center', padding: '2px 4px', verticalAlign: 'middle' }}>
+                              {sigImg ? (
+                                <img
+                                  src={sigImg}
+                                  alt="Sign"
+                                  style={{ maxHeight: '24px', maxWidth: '70px', objectFit: 'contain', display: 'block', margin: '0 auto' }}
+                                />
+                              ) : (
+                                <span style={{ color: '#94a3b8', fontSize: '7.5pt', fontStyle: 'italic' }}>—</span>
+                              )}
+                            </td>
                           </tr>
                         );
                       })}
@@ -604,6 +617,7 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
                         <td className="vol" style={{ fontWeight: 900, color: '#15803d', background: '#f0fdf4', borderBottom: '2px solid #16a34a', fontSize: '10pt' }}>
                           +{totalOilIn.toLocaleString()} L
                         </td>
+                        <td style={{ background: '#f0fdf4', borderBottom: '2px solid #16a34a' }}></td>
                       </tr>
                     </>
                   )}
@@ -614,7 +628,7 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
                       {/* Section label row (only if there were also oil_in entries above) */}
                       {oilInEntries.length > 0 && (
                         <tr>
-                          <td colSpan={8} style={{
+                          <td colSpan={9} style={{
                             background: '#fef2f2',
                             borderTop: '2px solid #dc2626',
                             borderBottom: '1px solid #fecaca',
@@ -633,6 +647,7 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
                         const rowOut = parseFloat(log.refill_liters || 0);
                         const rowIn = parseFloat(log.oil_in || 0);
                         const currentShift = normalizeShift(log.shift);
+                        const sigImg = log.signature_url || log.signature_data_url;
                         return (
                           <tr key={`out-${log.id || i}`}>
                             <td className="num">{i + 1}</td>
@@ -655,6 +670,17 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
                             <td className="vol" style={{ color: rowIn > 0 ? '#15803d' : '#94a3b8', fontWeight: rowIn > 0 ? 800 : 400 }}>
                               {rowIn > 0 ? `+${rowIn.toLocaleString()}` : '—'}
                             </td>
+                            <td style={{ textAlign: 'center', padding: '2px 4px', verticalAlign: 'middle' }}>
+                              {sigImg ? (
+                                <img
+                                  src={sigImg}
+                                  alt="Sign"
+                                  style={{ maxHeight: '24px', maxWidth: '70px', objectFit: 'contain', display: 'block', margin: '0 auto' }}
+                                />
+                              ) : (
+                                <span style={{ color: '#94a3b8', fontSize: '7.5pt', fontStyle: 'italic' }}>—</span>
+                              )}
+                            </td>
                           </tr>
                         );
                       })}
@@ -675,6 +701,7 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
               <td className="vol" style={{ fontSize: '9.5pt', color: '#15803d', fontWeight: 800 }}>
                 {totalOilIn > 0 ? `+${totalOilIn.toLocaleString()} L` : '0 L'}
               </td>
+              <td></td>
             </tr>
           </tfoot>
         </table>
