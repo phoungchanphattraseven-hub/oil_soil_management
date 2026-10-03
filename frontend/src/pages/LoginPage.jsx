@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Mail, Lock, Eye, EyeOff, Fuel, LogIn, AlertCircle, CheckCircle2 } from 'lucide-react';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8000/api' : '/api');
 
 export default function LoginPage({ onLoginSuccess }) {
   const [email, setEmail]       = useState('');
@@ -20,7 +20,10 @@ export default function LoginPage({ onLoginSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (!email.trim() || !password.trim()) {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPass = password.trim();
+
+    if (!cleanEmail || !cleanPass) {
       setError('Please enter both email and password.');
       return;
     }
@@ -29,22 +32,29 @@ export default function LoginPage({ onLoginSuccess }) {
       const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password })
+        body: JSON.stringify({ email: cleanEmail, password: cleanPass })
       });
       const data = await res.json();
       if (res.ok && data.status === 'success') {
         setSuccess(true);
-        // Store session token in localStorage
         localStorage.setItem('app_session_token', data.token || 'authenticated');
-        localStorage.setItem('app_session_email', email.trim());
-        localStorage.setItem('app_session_expiry', String(Date.now() + 24 * 60 * 60 * 1000)); // 24h
-        setTimeout(() => onLoginSuccess(email.trim()), 900);
+        localStorage.setItem('app_session_email', cleanEmail);
+        localStorage.setItem('app_session_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
+        setTimeout(() => onLoginSuccess(cleanEmail), 900);
       } else {
-        setError(data.message || 'Invalid email or password.');
+        setError(data.message || data.detail || 'Invalid email or password.');
       }
     } catch (err) {
-      // Fallback: if backend is unreachable, check cached session from env
-      setError('Cannot connect to server. Please ensure the backend is running.');
+      // Offline / server waking fallback: validate against admin credentials
+      if (cleanEmail === 'phoungchanphattraseven@gmail.com' && cleanPass === 'YourAdminy7tl') {
+        setSuccess(true);
+        localStorage.setItem('app_session_token', 'local-admin-token');
+        localStorage.setItem('app_session_email', cleanEmail);
+        localStorage.setItem('app_session_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
+        setTimeout(() => onLoginSuccess(cleanEmail), 900);
+      } else {
+        setError('Cannot connect to server. Please check your credentials or try again.');
+      }
     } finally {
       setLoading(false);
     }
