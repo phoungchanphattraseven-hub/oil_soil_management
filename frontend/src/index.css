@@ -1484,6 +1484,27 @@ select.form-control option {
 
 /* ─── Desktop View (> 768px) ────────────────────────── */
 @media (min-width: 769px) {
+  .sidebar-wrapper {
+    position: sticky !important;
+    top: 0 !important;
+    height: 100vh !important;
+    flex-shrink: 0 !important;
+    z-index: 100 !important;
+  }
+
+  .app-sidebar {
+    width: 240px !important;
+    min-width: 240px !important;
+    height: 100vh !important;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    position: sticky !important;
+    top: 0 !important;
+    overflow-y: auto;
+  }
+
   .mobile-bottom-nav {
     display: none !important;
   }
