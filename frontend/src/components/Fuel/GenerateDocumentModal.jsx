@@ -492,7 +492,7 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
               <th style={{ width: '32px' }}>#</th>
               <th className="th-desc">{isKm ? 'ការពិពណ៌នា' : 'Description'}</th>
               <th style={{ width: '85px', whiteSpace: 'nowrap' }}>{isKm ? 'ផ្លាកលេខ' : 'License Plate'}</th>
-              <th style={{ width: '100px' }}>{isKm ? 'អ្នកបើកបរ' : 'Driver Name'}</th>
+              <th style={{ width: '100px' }}>{isKm ? 'អ្នកបើកបរ' : 'Driver / Staff'}</th>
               <th style={{ width: '65px' }}>{isKm ? 'ម៉ោង' : 'Time'}</th>
               <th style={{ width: '55px' }}>{isKm ? 'វេន' : 'Shift'}</th>
               <th className="th-vol" style={{ width: '80px' }}>{isKm ? 'ដកប្រើ (Out L)' : 'Fuel Out (L)'}</th>
@@ -506,54 +506,148 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
                   {isKm ? 'គ្មានទិន្នន័យសម្រាប់លក្ខខណ្ឌដែលបានជ្រើសរើស' : 'No records found for the selected filter.'}
                 </td>
               </tr>
-            ) : (
-              logs.map((log, i) => {
-                const currentShift = normalizeShift(log.shift);
-                const rowOut = parseFloat(log.refill_liters || 0);
-                const rowIn = parseFloat(log.oil_in || 0);
-                const isOilInOnly = rowIn > 0 && rowOut === 0;
+            ) : (() => {
+              // Separate Oil In entries from regular fuel-out entries
+              const oilInEntries = logs.filter(l => (parseFloat(l.oil_in) || 0) > 0);
+              const fuelOutEntries = logs.filter(l => (parseFloat(l.oil_in) || 0) === 0 || (parseFloat(l.refill_liters) || 0) > 0);
+              // For rows that have both oil_in AND refill_liters, show in oil_in section only
+              const pureOilIn = logs.filter(l => (parseFloat(l.oil_in) || 0) > 0 && (parseFloat(l.refill_liters) || 0) === 0);
+              const mixedOrOut = logs.filter(l => (parseFloat(l.refill_liters) || 0) > 0);
 
-                return (
-                  <tr key={log.id || i} style={{ background: isOilInOnly ? '#f0fdf4' : undefined }}>
-                    <td className="num">{i + 1}</td>
-                    <td className="desc">
-                      {log.description || (isOilInOnly ? (isKm ? 'នាំចូលប្រេងក្នុងស្តុក' : 'Stock Tank Refill Arrival') : (isKm ? 'ឡានចាក់សាំង' : 'Vehicle Refuel'))}
-                      {isOilInOnly && (
-                        <span style={{ marginLeft: '6px', fontSize: '7.5pt', background: '#dcfce7', color: '#15803d', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>
-                          {isKm ? 'បំពេញស្តុក' : 'STOCK IN'}
-                        </span>
+              return (
+                <>
+                  {/* ── OIL IN BLOCK: always shown first at top ── */}
+                  {oilInEntries.length > 0 && (
+                    <>
+                      {/* Section label row */}
+                      <tr>
+                        <td colSpan={8} style={{
+                          background: '#dcfce7',
+                          borderTop: '2px solid #16a34a',
+                          borderBottom: '1px solid #bbf7d0',
+                          padding: '4px 10px',
+                          fontWeight: 800,
+                          fontSize: '8pt',
+                          color: '#15803d',
+                          letterSpacing: '0.5px',
+                          textTransform: 'uppercase'
+                        }}>
+                          ▼ {isKm ? 'ប្រេងចូល / បំពេញស្តុក (OIL IN — Stock Refill Received Today)' : 'OIL IN — Stock Refill / Fuel Received Today'}
+                        </td>
+                      </tr>
+                      {oilInEntries.map((log, i) => {
+                        const rowOut = parseFloat(log.refill_liters || 0);
+                        const rowIn = parseFloat(log.oil_in || 0);
+                        const currentShift = normalizeShift(log.shift);
+                        return (
+                          <tr key={`in-${log.id || i}`} style={{ background: '#f0fdf4' }}>
+                            <td className="num" style={{ color: '#15803d', fontWeight: 800 }}>{i + 1}</td>
+                            <td className="desc">
+                              <span style={{ fontWeight: 700, color: '#15803d' }}>
+                                {log.description || (isKm ? 'ប្រេងចូលស្តុក' : 'Stock Tank Refill')}
+                              </span>
+                              <span style={{
+                                marginLeft: '6px', fontSize: '7pt',
+                                background: '#15803d', color: '#fff',
+                                padding: '1px 5px', borderRadius: '3px', fontWeight: 700
+                              }}>
+                                {isKm ? 'បំពេញស្តុក' : 'STOCK IN'}
+                              </span>
+                            </td>
+                            <td className="plate" style={{ color: '#15803d' }}>{log.license_plate || log.code_abbr || '—'}</td>
+                            <td className="driver" style={{ color: '#15803d' }}>{log.driver_name || log.driver || '—'}</td>
+                            <td className="time">
+                              {log.time_in
+                                ? (log.time_in.includes('T') ? log.time_in.substring(11, 16) : log.time_in.substring(0, 5))
+                                : '—'}
+                            </td>
+                            <td className="shift-badge">
+                              {currentShift === 'Morning' ? (isKm ? 'ព្រឹក' : 'Morning') : (isKm ? 'រសៀល' : 'Afternoon')}
+                            </td>
+                            <td className="vol" style={{ color: rowOut > 0 ? '#b91c1c' : '#94a3b8' }}>
+                              {rowOut > 0 ? rowOut.toLocaleString() : '—'}
+                            </td>
+                            <td className="vol" style={{ color: '#15803d', fontWeight: 900, fontSize: '10pt' }}>
+                              +{rowIn.toLocaleString()}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {/* Oil In subtotal row */}
+                      <tr>
+                        <td colSpan={7} style={{ textAlign: 'right', paddingRight: '12px', fontWeight: 700, background: '#f0fdf4', borderBottom: '2px solid #16a34a', color: '#15803d', fontSize: '8pt' }}>
+                          {isKm ? 'សរុបប្រេងចូល (TOTAL OIL IN):' : 'TOTAL OIL IN:'}
+                        </td>
+                        <td className="vol" style={{ fontWeight: 900, color: '#15803d', background: '#f0fdf4', borderBottom: '2px solid #16a34a', fontSize: '10pt' }}>
+                          +{totalOilIn.toLocaleString()} L
+                        </td>
+                      </tr>
+                    </>
+                  )}
+
+                  {/* ── FUEL OUT BLOCK: vehicle refueling entries ── */}
+                  {mixedOrOut.length > 0 && (
+                    <>
+                      {/* Section label row (only if there were also oil_in entries above) */}
+                      {oilInEntries.length > 0 && (
+                        <tr>
+                          <td colSpan={8} style={{
+                            background: '#fef2f2',
+                            borderTop: '2px solid #dc2626',
+                            borderBottom: '1px solid #fecaca',
+                            padding: '4px 10px',
+                            fontWeight: 800,
+                            fontSize: '8pt',
+                            color: '#b91c1c',
+                            letterSpacing: '0.5px',
+                            textTransform: 'uppercase'
+                          }}>
+                            ▼ {isKm ? 'ប្រេងចេញ / ចាក់ឡាន (FUEL OUT — Vehicle Fuel Dispatched)' : 'FUEL OUT — Vehicle Fuel Dispatched'}
+                          </td>
+                        </tr>
                       )}
-                    </td>
-                    <td className="plate">{log.license_plate || log.code_abbr || '—'}</td>
-                    <td className="driver">{log.driver_name || log.driver || log.driverName || '—'}</td>
-                    <td className="time">
-                      {log.time_in
-                        ? (log.time_in.includes('T')
-                            ? log.time_in.substring(11, 16)
-                            : log.time_in.substring(0, 5))
-                        : '—'}
-                    </td>
-                    <td className="shift-badge">
-                      {currentShift === 'Morning' ? (isKm ? 'ព្រឹក' : 'Morning') : (isKm ? 'រសៀល' : 'Afternoon')}
-                    </td>
-                    <td className="vol" style={{ color: rowOut > 0 ? '#0f172a' : '#94a3b8' }}>
-                      {rowOut > 0 ? rowOut.toLocaleString() : '—'}
-                    </td>
-                    <td className="vol" style={{ color: rowIn > 0 ? '#15803d' : '#94a3b8', fontWeight: rowIn > 0 ? 800 : 500 }}>
-                      {rowIn > 0 ? `+${rowIn.toLocaleString()}` : '—'}
-                    </td>
-                  </tr>
-                );
-              })
-            )}
+                      {mixedOrOut.map((log, i) => {
+                        const rowOut = parseFloat(log.refill_liters || 0);
+                        const rowIn = parseFloat(log.oil_in || 0);
+                        const currentShift = normalizeShift(log.shift);
+                        return (
+                          <tr key={`out-${log.id || i}`}>
+                            <td className="num">{i + 1}</td>
+                            <td className="desc">
+                              {log.description || (isKm ? 'ឡានចាក់សាំង' : 'Vehicle Refuel')}
+                            </td>
+                            <td className="plate">{log.license_plate || log.code_abbr || '—'}</td>
+                            <td className="driver">{log.driver_name || log.driver || log.driverName || '—'}</td>
+                            <td className="time">
+                              {log.time_in
+                                ? (log.time_in.includes('T') ? log.time_in.substring(11, 16) : log.time_in.substring(0, 5))
+                                : '—'}
+                            </td>
+                            <td className="shift-badge">
+                              {currentShift === 'Morning' ? (isKm ? 'ព្រឹក' : 'Morning') : (isKm ? 'រសៀល' : 'Afternoon')}
+                            </td>
+                            <td className="vol" style={{ color: '#0f172a' }}>
+                              {rowOut > 0 ? rowOut.toLocaleString() : '—'}
+                            </td>
+                            <td className="vol" style={{ color: rowIn > 0 ? '#15803d' : '#94a3b8', fontWeight: rowIn > 0 ? 800 : 400 }}>
+                              {rowIn > 0 ? `+${rowIn.toLocaleString()}` : '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </>
+                  )}
+                </>
+              );
+            })()}
           </tbody>
           <tfoot>
             <tr>
               <td colSpan={6} style={{ textAlign: 'right', paddingRight: '12px', letterSpacing: '0.3px', fontWeight: 700 }}>
-                {isKm ? 'សរុបរួម (TOTAL VOLUMES):' : 'TOTAL VOLUMES:'}
+                {isKm ? 'សរុបរួម (GRAND TOTAL):' : 'GRAND TOTAL:'}
               </td>
-              <td className="vol" style={{ fontSize: '9.5pt', color: '#0f172a', fontWeight: 800 }}>
-                {totalOilOut.toLocaleString()} L
+              <td className="vol" style={{ fontSize: '9.5pt', color: '#b91c1c', fontWeight: 800 }}>
+                -{totalOilOut.toLocaleString()} L
               </td>
               <td className="vol" style={{ fontSize: '9.5pt', color: '#15803d', fontWeight: 800 }}>
                 {totalOilIn > 0 ? `+${totalOilIn.toLocaleString()} L` : '0 L'}
