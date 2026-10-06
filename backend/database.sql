@@ -12,14 +12,18 @@ DROP TABLE IF EXISTS users CASCADE;
 DROP TYPE IF EXISTS user_role CASCADE;
 
 -- Step 2: Create enum
-CREATE TYPE user_role AS ENUM ('admin', 'phattra');
+CREATE TYPE user_role AS ENUM ('admin', 'phattra', 'user');
 
 -- Step 3: Create users table
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username VARCHAR(50) UNIQUE NOT NULL,
+    full_name VARCHAR(100),
+    password_hash TEXT,
     role user_role NOT NULL DEFAULT 'phattra',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    status VARCHAR(20) DEFAULT 'active',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Step 4: Create fuel_stations table
@@ -87,9 +91,25 @@ CREATE TABLE soil_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Step 8: Insert seed users
-INSERT INTO users (username, role) VALUES ('admin', 'admin');
-INSERT INTO users (username, role) VALUES ('phattra', 'phattra');
+-- Step 8: Insert seed users (run this in Supabase SQL editor if users table is empty)
+-- The main admin uses .env credentials and doesn't need a DB record
+-- These are example starters only:
+INSERT INTO users (username, role) VALUES ('admin@company.com', 'admin') ON CONFLICT (username) DO NOTHING;
+INSERT INTO users (username, role) VALUES ('phattra', 'phattra') ON CONFLICT (username) DO NOTHING;
+
+-- ─────────────────────────────────────────────────────────────────
+-- MIGRATION: Run this in Supabase SQL editor if DB already exists
+-- (safe to run multiple times — uses IF NOT EXISTS / DO NOTHING)
+-- ─────────────────────────────────────────────────────────────────
+-- 1. Add 'user' value to existing enum (skip if already present):
+--    ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'user';
+--
+-- 2. Add new columns if not already there:
+--    ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(100);
+--    ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
+--    ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active';
+--    ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+-- ─────────────────────────────────────────────────────────────────
 
 -- Step 9: Insert station Y34
 INSERT INTO fuel_stations (station_name, location, current_stock_liters, target_capacity_liters, reorder_threshold_liters)
@@ -108,3 +128,5 @@ CREATE POLICY "Allow all access to fuel_stations" ON fuel_stations FOR ALL USING
 CREATE POLICY "Allow all access to staff" ON staff FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access to fuel_logs" ON fuel_logs FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access to soil_logs" ON soil_logs FOR ALL USING (true) WITH CHECK (true);
+
+

@@ -4,7 +4,7 @@ import { Fuel, RefreshCw, MapPin, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { translations } from '../../data/translations';
 
-export default function FuelStationCard({ station, onDeleteStation, lang = 'km' }) {
+export default function FuelStationCard({ station, onDeleteStation, lang = 'km', userRole = 'user' }) {
   const isLow = station.current_stock_liters < station.reorder_threshold_liters;
   const t = translations[lang] || translations.km;
 
@@ -46,7 +46,7 @@ export default function FuelStationCard({ station, onDeleteStation, lang = 'km' 
           <span className={isLow ? 'badge badge-danger' : 'badge badge-success'}>
             {isLow ? t.reorderNeeded : t.normalStock}
           </span>
-          {onDeleteStation && (
+          {onDeleteStation && userRole === 'admin' && (
             <button
               onClick={handleDelete}
               title={t.deleteStation || 'Delete Station'}

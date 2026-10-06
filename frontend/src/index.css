@@ -767,8 +767,11 @@ select.form-control option {
   box-shadow: var(--shadow-modal);
   width: 100%;
   max-width: 600px;
+  max-height: 90vh;
   overflow: hidden;
   animation: slideUpModal 0.22s var(--ease);
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-box-sm {
@@ -816,6 +819,9 @@ select.form-control option {
 
 .modal-body {
   padding: 22px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .modal-footer {
@@ -825,6 +831,20 @@ select.form-control option {
   padding: 16px 22px;
   border-top: 1px solid var(--border-subtle);
   background: rgba(255,255,255,0.01);
+  flex-shrink: 0;
+}
+
+/* Modal content scrollable sections */
+.modal-content-scrollable {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.modal-form-content {
+  overflow-y: auto;
+  max-height: 60vh;
+  padding: 20px;
 }
 
 /* ─── Alert / Toast ──────────────────────────────────── */
@@ -1191,6 +1211,78 @@ select.form-control option {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* Data Status Indicators */
+.data-status-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 8px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-xs);
+  white-space: nowrap;
+}
+
+.queue-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--warning-subtle);
+  border: 1px solid var(--warning-border);
+  border-radius: var(--r-xs);
+  white-space: nowrap;
+}
+
+.data-menu-wrapper {
+  position: relative;
+}
+
+.data-dropdown-menu {
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .data-status-group {
+    gap: 6px;
+    margin-right: 4px;
+  }
+  
+  .status-indicator,
+  .queue-indicator {
+    padding: 3px 6px;
+  }
+  
+  .status-indicator span,
+  .queue-indicator span {
+    font-size: 0.65rem !important;
+  }
+  
+  .data-dropdown-menu {
+    right: -20px;
+    min-width: 180px;
+  }
+}
+
+.app-sidebar {
+  background: var(--bg-sidebar);
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-toggle-btn {
@@ -1632,6 +1724,23 @@ select.form-control option {
     height: 50px !important;
   }
 
+  /* Compact language toggle on mobile */
+  .header-pill-toggle {
+    padding: 4px 7px !important;
+    gap: 3px !important;
+    font-size: 0.7rem !important;
+  }
+
+  /* Compact logout button on mobile */
+  #logout-btn {
+    padding: 5px 8px !important;
+    font-size: 0;  /* hide text, icon only */
+  }
+  #logout-btn svg {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
   /* Bottom nav visible */
   .mobile-bottom-nav {
     display: flex !important;
@@ -1651,8 +1760,14 @@ select.form-control option {
     width: 270px;
     max-width: 82vw;
     z-index: 1200;
+    background: var(--bg-sidebar);
     box-shadow: 6px 0 28px rgba(0, 0, 0, 0.6);
     transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  [data-theme="light"] .sidebar-wrapper,
+  body.light-mode .sidebar-wrapper {
+    box-shadow: 6px 0 28px rgba(15, 23, 42, 0.16);
   }
 
   .sidebar-wrapper.drawer-closed {
@@ -1669,6 +1784,9 @@ select.form-control option {
     height: 100vh !important;
     width: 100% !important;
     min-width: unset !important;
+    background: var(--bg-sidebar) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 
   .mobile-drawer-overlay {
@@ -1710,9 +1828,16 @@ select.form-control option {
   .modal-box, .modal-box-sm, .modal-box-lg {
     width: 100% !important;
     max-width: 100% !important;
-    max-height: 90vh !important;
+    max-height: 95vh !important;
     border-radius: 16px 16px 0 0 !important;
-    padding: 16px !important;
+  }
+
+  .modal-body {
+    max-height: calc(95vh - 120px) !important;
+  }
+
+  .modal-content-scrollable {
+    max-height: calc(95vh - 140px) !important;
   }
 }
 

@@ -63,7 +63,8 @@ export default function FuelLogTable({
   onOpenLogForm,
   initialViewMode = 'LIVE',
   savedArchives: externalArchives,
-  setSavedArchives: externalSetArchives
+  setSavedArchives: externalSetArchives,
+  userRole = 'user'
 }) {
   const t = translations[lang] || translations.km;
   const [editingLog, setEditingLog]       = useState(null);

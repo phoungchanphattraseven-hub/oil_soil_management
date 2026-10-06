@@ -44,26 +44,16 @@ export default function AbbrCodeModal({
   return (
     <div
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-      style={{
-        position: 'fixed', inset: 0,
-        background: 'rgba(0, 0, 0, 0.75)',
-        backdropFilter: 'blur(6px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 1200, padding: '16px'
-      }}
+      className="modal-overlay"
     >
-      <div className="card" style={{
-        width: '100%', maxWidth: '520px',
-        boxShadow: 'var(--shadow-modal)',
-        overflow: 'hidden'
+      <div className="card modal-box" style={{
+        maxWidth: '520px',
+        boxShadow: 'var(--shadow-modal)'
       }}>
         {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ padding: '8px', background: 'var(--fuel-subtle)', borderRadius: 'var(--radius-sm)', color: 'var(--fuel-accent)', display: 'flex' }}>
+        <div className="modal-header">
+          <div className="modal-title-group">
+            <div className="modal-icon" style={{ background: 'var(--fuel-subtle)', color: 'var(--fuel-accent)' }}>
               <Tag size={18} />
             </div>
             <div>
@@ -77,10 +67,7 @@ export default function AbbrCodeModal({
           </div>
           <button
             onClick={onClose}
-            style={{
-              background: 'transparent', border: 'none',
-              padding: '6px', cursor: 'pointer', color: 'var(--text-muted)'
-            }}
+            className="modal-close-btn"
           >
             <X size={18} />
           </button>
@@ -89,7 +76,8 @@ export default function AbbrCodeModal({
         {/* Tab Selector */}
         <div style={{
           display: 'flex', borderBottom: '1px solid var(--border-subtle)',
-          background: 'rgba(255,255,255,0.02)'
+          background: 'rgba(255,255,255,0.02)',
+          flexShrink: 0
         }}>
           <button
             onClick={() => setActiveTab('plates')}
@@ -120,7 +108,12 @@ export default function AbbrCodeModal({
           </button>
         </div>
 
-        <div style={{ padding: '20px' }}>
+        <div className="modal-content-scrollable" style={{
+          display: 'flex', 
+          flexDirection: 'column', 
+          minHeight: 0,
+          padding: '20px'
+        }}>
           {/* Success Banner */}
           {successMsg && (
             <div className="alert alert-success" style={{ marginBottom: '14px', fontSize: '0.78rem' }}>
@@ -265,7 +258,7 @@ export default function AbbrCodeModal({
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'flex-end' }}>
+        <div className="modal-footer" style={{ justifyContent: 'flex-end' }}>
           <button
             onClick={onClose}
             className="btn btn-secondary"

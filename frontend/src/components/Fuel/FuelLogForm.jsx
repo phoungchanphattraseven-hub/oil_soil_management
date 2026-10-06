@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Fuel, CheckCircle2, X, Clock, Car, Droplets, MapPin, CalendarClock, User } from 'lucide-react';
+import { Fuel, CheckCircle2, X, Clock, Car, Droplets, MapPin, CalendarClock, User, Check } from 'lucide-react';
 import { translations } from '../../data/translations';
 import StaffSelector from '../Common/StaffSelector';
 import ImageUploader from '../Common/ImageUploader';
@@ -17,7 +17,8 @@ export default function FuelLogForm({
   lang = 'km',
   open,
   onClose,
-  initialDate = ''
+  initialDate = '',
+  assignedStation = { id: '', name: '' }
 }) {
   const [stationId, setStationId]       = useState('');
   const [refillLiters, setRefillLiters] = useState('');
@@ -30,6 +31,7 @@ export default function FuelLogForm({
   const [photoUrl, setPhotoUrl]         = useState('');
   const [signatureUrl, setSignatureUrl] = useState('');
   const [isSuccess, setIsSuccess]       = useState(false);
+  const [pendingSave, setPendingSave]   = useState(null);
 
   const t = translations[lang] || translations.km;
   const isKm = lang === 'km';
@@ -46,8 +48,15 @@ export default function FuelLogForm({
   }, [open, initialDate]);
 
   useEffect(() => {
-    if (!stationId && stations.length > 0) setStationId(stations[0].id);
-  }, [stations, stationId]);
+    if (stations.length === 0) return;
+    // If user has an assigned station and it exists in the list, pre-select it
+    if (assignedStation?.id) {
+      const match = stations.find(s => s.id === assignedStation.id);
+      if (match) { setStationId(match.id); return; }
+    }
+    // Fallback: select first station
+    if (!stationId) setStationId(stations[0].id);
+  }, [stations, assignedStation]);
 
   if (!open) return null;
 
@@ -56,9 +65,14 @@ export default function FuelLogForm({
   const handleSelectStaff = (member) => {
     if (!member) {
       setSelectedStaffId(null);
+      setSignatureUrl('');
       return;
     }
     setSelectedStaffId(member.id);
+    // Auto-fill signature from staff profile if available
+    if (member.signature_url) {
+      setSignatureUrl(member.signature_url);
+    }
     // Keep description clean without attaching name
     if (!description || description.includes('—')) {
       setDescription(isKm ? 'ឡានចាក់សាំង' : 'Refueling');
@@ -73,7 +87,7 @@ export default function FuelLogForm({
     const driverName = selectedStaff?.name || '';
     const selectedStation = stations.find(s => String(s.id) === String(stationId)) || stations[0];
 
-    onAddFuelLog({
+    setPendingSave({
       id: `flog-${Date.now()}`,
       station_id: selectedStation?.id || stationId,
       station_name: selectedStation?.name || selectedStation?.station_name || 'ស្ថានីយ៍សាំង',
@@ -94,8 +108,13 @@ export default function FuelLogForm({
       status: 'Completed',
       created_at: new Date().toISOString()
     });
+  };
 
-    // Reset
+  const confirmSave = () => {
+    if (!pendingSave) return;
+    onAddFuelLog(pendingSave);
+    setPendingSave(null);
+
     setRefillLiters(''); setOilIn('');
     setSelectedStaffId(null);
     setDescription('ឡានចាក់សាំង'); setShift('Morning');
@@ -149,6 +168,8 @@ export default function FuelLogForm({
                 value={stationId}
                 onChange={e => setStationId(e.target.value)}
                 required
+                disabled={!!assignedStation?.id}
+                style={assignedStation?.id ? { opacity: 0.75, cursor: 'not-allowed' } : {}}
               >
                 {stations.length === 0 ? (
                   <option value="">{isKm ? 'គ្មានស្ថានីយ៍' : 'No stations'}</option>
@@ -160,6 +181,12 @@ export default function FuelLogForm({
                   ))
                 )}
               </select>
+              {assignedStation?.id && (
+                <p style={{ fontSize: '0.7rem', color: 'var(--success)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>📍</span>
+                  {isKm ? 'ស្ថានីយ៍ត្រូវបានកំណត់ដោយអ្នកគ្រប់គ្រង' : 'Station assigned by your administrator'}
+                </p>
+              )}
             </div>
 
             <div className="form-group">
@@ -189,7 +216,7 @@ export default function FuelLogForm({
               lang={lang}
             />
             {selectedStaff && (
-              <div style={{ marginTop: '6px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <div style={{ marginTop: '6px', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                   {isKm ? 'ឈ្មោះ:' : 'Name:'} <strong style={{ color: 'var(--text-main)' }}>{selectedStaff.name}</strong>
                 </span>
@@ -201,6 +228,24 @@ export default function FuelLogForm({
                 {selectedStaff.role && (
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                     {selectedStaff.role}
+                  </span>
+                )}
+                {/* Signature auto-fill indicator */}
+                {signatureUrl ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px', width: '100%' }}>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--success)', fontWeight: 600 }}>
+                      ✔ {isKm ? 'ហត្ថលេខារបស់បុគ្គលិក:' : 'Staff signature loaded:'}
+                    </span>
+                    <div style={{
+                      background: '#fff', border: '1px solid var(--border-subtle)',
+                      borderRadius: '4px', padding: '2px 6px', display: 'inline-flex', alignItems: 'center'
+                    }}>
+                      <img src={signatureUrl} alt="Signature" style={{ maxHeight: '22px', maxWidth: '90px', objectFit: 'contain' }} />
+                    </div>
+                  </div>
+                ) : (
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontStyle: 'italic', width: '100%', marginTop: '2px' }}>
+                    {isKm ? '(គ្មានហត្ថលេខា — ទៅ Tab «បុគ្គលិក» ដើម្បីស្កេនហត្ថលេខា)' : '(No signature — scan one in the Staff tab first)'}
                   </span>
                 )}
               </div>
@@ -314,6 +359,17 @@ export default function FuelLogForm({
             </div>
           </div>
 
+          {/* Signature Upload (manual override) */}
+          <div className="form-group">
+            <ImageUploader
+              value={signatureUrl}
+              onChange={setSignatureUrl}
+              label={isKm ? 'ហត្ថលេខា (Signature — auto from staff or upload manually)' : 'Signature (auto-loaded from staff or upload)'}
+              hint={isKm ? 'ហត្ថលេខាត្រូវបានផ្ទុករួចហើយ ប្រសិនបើបុគ្គលិកមានហត្ថលេខា' : 'Auto-filled if selected staff has a signature on file'}
+              compact
+            />
+          </div>
+
           {/* Actions */}
           <div className="modal-footer" style={{ padding: '0', margin: '4px 0 0', borderTop: 'none' }}>
             <button type="submit" className="btn btn-fuel btn-lg" style={{ flex: 1 }}>
@@ -326,6 +382,64 @@ export default function FuelLogForm({
           </div>
         </form>
       </div>
+
+      {pendingSave && (
+        <div
+          className="modal-overlay"
+          style={{ zIndex: 1200 }}
+          onClick={e => { if (e.target === e.currentTarget) setPendingSave(null); }}
+        >
+          <div className="modal-box modal-box-sm" style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <div className="modal-title-group">
+                <div className="modal-icon" style={{ background: 'var(--fuel-subtle)' }}>
+                  <Fuel size={18} color="var(--fuel-accent)" />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '0.95rem', margin: 0 }}>
+                    {isKm ? 'បញ្ជាក់ការរក្សាទុក' : 'Confirm save'}
+                  </h3>
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>
+                    {isKm ? 'សូមពិនិត្យព័ត៌មានមុនរក្សាទុក' : 'Please review this entry before saving'}
+                  </p>
+                </div>
+              </div>
+              <button className="modal-close-btn" onClick={() => setPendingSave(null)}><X size={17} /></button>
+            </div>
+            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.82rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+                <span style={{ color: 'var(--text-muted)' }}>{isKm ? 'ស្ថានីយ៍' : 'Station'}</span>
+                <strong style={{ color: 'var(--text-main)', textAlign: 'right' }}>{pendingSave.station_name}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+                <span style={{ color: 'var(--text-muted)' }}>{isKm ? 'អ្នកបើកបរ' : 'Driver'}</span>
+                <strong style={{ color: 'var(--text-main)', textAlign: 'right' }}>{pendingSave.driver_name || '—'}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+                <span style={{ color: 'var(--text-muted)' }}>{isKm ? 'ប្រេងចេញ' : 'Out'}</span>
+                <strong style={{ color: 'var(--fuel-accent)' }}>{pendingSave.refill_liters} L</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+                <span style={{ color: 'var(--text-muted)' }}>{isKm ? 'ប្រេងចូល' : 'In'}</span>
+                <strong style={{ color: 'var(--success)' }}>{pendingSave.oil_in} L</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+                <span style={{ color: 'var(--text-muted)' }}>{isKm ? 'ម៉ោង' : 'Time'}</span>
+                <strong style={{ color: 'var(--text-main)' }}>{(pendingSave.time_in || '').replace('T', ' ').substring(0, 16)}</strong>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={() => setPendingSave(null)}>
+                {isKm ? 'ត្រឡប់កែ' : 'Go back'}
+              </button>
+              <button type="button" className="btn btn-fuel" onClick={confirmSave}>
+                <Check size={15} />
+                {isKm ? 'បញ្ជាក់រក្សាទុក' : 'Confirm save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

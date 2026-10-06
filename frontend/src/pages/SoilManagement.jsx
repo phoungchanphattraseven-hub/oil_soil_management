@@ -5,7 +5,7 @@ import AbbrCodeModal from '../components/Common/AbbrCodeModal';
 import { HardHat, Box, Truck, DollarSign, Tag } from 'lucide-react';
 import { translations } from '../data/translations';
 
-export default function SoilManagement({ soilLogs = [], abbrCodes = [], onAddAbbrCode, onAddSoilLog, onDeleteSoilLog, onEditSoilLog, lang = 'km' }) {
+export default function SoilManagement({ soilLogs = [], abbrCodes = [], onAddAbbrCode, onAddSoilLog, onDeleteSoilLog, onEditSoilLog, lang = 'km', userRole = 'user', assignedStation = { id: '', name: '' } }) {
   const [showCodeModal, setShowCodeModal] = useState(false);
 
   const totalVolume = soilLogs.reduce((sum, s) => sum + (s.total_cubic_meters || 0), 0);
@@ -27,10 +27,12 @@ export default function SoilManagement({ soilLogs = [], abbrCodes = [], onAddAbb
         </div>
 
         <div>
-          <button onClick={() => setShowCodeModal(true)} className="btn btn-secondary">
-            <Tag size={15} />
-            <span>{t.manageCodes || 'Manage Plates'}</span>
-          </button>
+          {userRole === 'admin' && (
+            <button onClick={() => setShowCodeModal(true)} className="btn btn-secondary">
+              <Tag size={15} />
+              <span>{t.manageCodes || 'Manage Plates'}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -80,7 +82,7 @@ export default function SoilManagement({ soilLogs = [], abbrCodes = [], onAddAbb
       </div>
 
       {/* Soil Log Form */}
-      <SoilLogForm onAddSoilLog={onAddSoilLog} abbrCodes={abbrCodes} onAddAbbrCode={onAddAbbrCode} lang={lang} />
+      <SoilLogForm onAddSoilLog={onAddSoilLog} abbrCodes={abbrCodes} onAddAbbrCode={onAddAbbrCode} lang={lang} assignedStation={assignedStation} />
 
       {/* Soil Log Table */}
       <SoilLogTable logs={soilLogs} onDelete={onDeleteSoilLog} onEdit={onEditSoilLog} abbrCodes={abbrCodes} onAddAbbrCode={onAddAbbrCode} lang={lang} />

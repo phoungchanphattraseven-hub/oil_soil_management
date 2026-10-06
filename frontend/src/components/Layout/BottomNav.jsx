@@ -3,33 +3,41 @@ import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Fuel, HardHat, Users } from 'lucide-react';
 import { translations } from '../../data/translations';
 
-export default function BottomNav({ alertCount = 0, lang = 'km', onOpenStaff }) {
+export default function BottomNav({ alertCount = 0, lang = 'km', userRole = 'user', onOpenStaff }) {
   const t = translations[lang] || translations.km;
 
-  const navItems = [
-    {
-      to: '/',
-      end: true,
-      icon: <LayoutDashboard size={20} />,
-      label: lang === 'km' ? 'ផ្ទាំងគ្រប់គ្រង' : 'Dashboard',
-      color: 'var(--primary)'
-    },
-    {
-      to: '/fuel',
-      end: false,
-      icon: <Fuel size={20} />,
-      label: lang === 'km' ? 'ប្រេងឥន្ធនៈ' : 'Fuel',
-      color: 'var(--fuel-accent)',
-      badge: alertCount > 0 ? alertCount : null
-    },
-    {
-      to: '/soil',
-      end: false,
-      icon: <HardHat size={20} />,
-      label: lang === 'km' ? 'ដឹកដី' : 'Soil',
-      color: 'var(--soil-accent)'
-    }
-  ];
+  // Define navigation items based on user role
+  const getNavItemsForRole = (role) => {
+    const baseNavItems = [
+      {
+        to: '/',
+        end: true,
+        icon: <LayoutDashboard size={20} />,
+        label: lang === 'km' ? 'ផ្ទាំងគ្រប់គ្រង' : 'Dashboard',
+        color: 'var(--primary)'
+      },
+      {
+        to: '/fuel',
+        end: false,
+        icon: <Fuel size={20} />,
+        label: lang === 'km' ? 'ប្រេងឥន្ធនៈ' : 'Fuel',
+        color: 'var(--fuel-accent)',
+        badge: alertCount > 0 ? alertCount : null
+      },
+      {
+        to: '/soil',
+        end: false,
+        icon: <HardHat size={20} />,
+        label: lang === 'km' ? 'ដឹកដី' : 'Soil',
+        color: 'var(--soil-accent)'
+      }
+    ];
+
+    // Return the same nav items for all users (admin features are hidden in pages themselves)
+    return baseNavItems;
+  };
+
+  const navItems = getNavItemsForRole(userRole);
 
   return (
     <nav

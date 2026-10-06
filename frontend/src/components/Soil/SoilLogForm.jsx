@@ -1,11 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HardHat, CheckCircle } from 'lucide-react';
 import { translations } from '../../data/translations';
 import AbbrCodeSelector from '../Common/AbbrCodeSelector';
 import ImageUploader from '../Common/ImageUploader';
 
-export default function SoilLogForm({ onAddSoilLog, abbrCodes = [], onAddAbbrCode, lang = 'km' }) {
-  const [stationName, setStationName] = useState('ស្ថានីយ៍ចាក់ដី ជ្រោយចង្វារ Site 1');
+export default function SoilLogForm({ onAddSoilLog, abbrCodes = [], onAddAbbrCode, lang = 'km', assignedStation = { id: '', name: '' } }) {
+  const defaultStationName = assignedStation?.name || 'ស្ថានីយ៍ចាក់ដី ជ្រោយចង្វារ Site 1';
+  const [stationName, setStationName] = useState(defaultStationName);
+
+  // Re-sync if assigned station changes after mount
+  useEffect(() => {
+    if (assignedStation?.name) setStationName(assignedStation.name);
+  }, [assignedStation?.name]);
   const [codeAbbr, setCodeAbbr] = useState('');
   const [tripCount, setTripCount] = useState('');
   const [cubicMetersPerTrip, setCubicMetersPerTrip] = useState('');
@@ -101,7 +107,15 @@ export default function SoilLogForm({ onAddSoilLog, abbrCodes = [], onAddAbbrCod
               value={stationName}
               onChange={(e) => setStationName(e.target.value)}
               required
+              disabled={!!assignedStation?.name}
+              style={assignedStation?.name ? { opacity: 0.75, cursor: 'not-allowed' } : {}}
             />
+            {assignedStation?.name && (
+              <p style={{ fontSize: '0.7rem', color: 'var(--success)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span>📍</span>
+                {lang === 'km' ? 'ស្ថានីយ៍ត្រូវបានកំណត់ដោយអ្នកគ្រប់គ្រង' : 'Station assigned by your administrator'}
+              </p>
+            )}
           </div>
 
           <div className="form-group">

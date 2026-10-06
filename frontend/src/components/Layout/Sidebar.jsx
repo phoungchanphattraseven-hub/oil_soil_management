@@ -1,35 +1,55 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Fuel, HardHat, ShieldCheck, AlertTriangle, X } from 'lucide-react';
+import { LayoutDashboard, Fuel, HardHat, ShieldCheck, AlertTriangle, X, Settings } from 'lucide-react';
 import { translations } from '../../data/translations';
 
-export default function Sidebar({ alertCount = 0, lang = 'km', onClose }) {
+export default function Sidebar({ alertCount = 0, lang = 'km', userRole = 'user', onClose }) {
   const t = translations[lang] || translations.km;
 
-  const navLinks = [
-    {
-      to: '/', end: true,
-      icon: <LayoutDashboard size={18} />,
-      label: t.dashboard,
-      accent: 'var(--primary)',
-      activeClass: 'active-primary'
-    },
-    {
-      to: '/fuel', end: false,
-      icon: <Fuel size={18} />,
-      label: t.session1Fuel,
-      accent: 'var(--fuel-accent)',
-      activeClass: 'active-fuel',
-      badge: alertCount > 0 ? alertCount : null
-    },
-    {
-      to: '/soil', end: false,
-      icon: <HardHat size={18} />,
-      label: t.session2Soil,
-      accent: 'var(--soil-accent)',
-      activeClass: 'active-soil'
-    }
-  ];
+  // Define navigation based on user role
+  const getNavLinksForRole = (role) => {
+    const isUser = role === 'user';
+
+    // Base navigation items
+    const baseNavLinks = [
+      {
+        to: '/', end: true,
+        icon: <LayoutDashboard size={18} />,
+        label: isUser ? (lang === 'km' ? 'ទំព័រដើម' : 'Home') : t.dashboard,
+        accent: 'var(--primary)',
+      },
+      {
+        to: '/fuel', end: false,
+        icon: <Fuel size={18} />,
+        label: isUser ? (lang === 'km' ? 'កត់ត្រាសាំង' : 'Fuel Log') : t.session1Fuel,
+        accent: 'var(--fuel-accent)',
+        // Only show alert badge for admins
+        badge: (!isUser && alertCount > 0) ? alertCount : null
+      },
+      {
+        to: '/soil', end: false,
+        icon: <HardHat size={18} />,
+        label: isUser ? (lang === 'km' ? ' កត់ត្រាដី' : 'Soil Log') : t.session2Soil,
+        accent: 'var(--soil-accent)',
+      }
+    ];
+
+    if (role === 'user') return baseNavLinks;
+
+    // Admin gets admin panel link too
+    return [
+      ...baseNavLinks,
+      {
+        to: '/admin', end: false,
+        icon: <Settings size={18} />,
+        label: lang === 'km' ? 'ការគ្រប់គ្រង' : 'Admin Panel',
+        accent: 'var(--primary)',
+        adminOnly: true
+      }
+    ];
+  };
+
+  const navLinks = getNavLinksForRole(userRole);
 
   return (
     <aside className="app-sidebar">
@@ -68,8 +88,8 @@ export default function Sidebar({ alertCount = 0, lang = 'km', onClose }) {
             onClick={onClose}
             className="sidebar-close-btn"
             style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: 'none',
+              background: 'var(--surface-raised)',
+              border: '1px solid var(--border-subtle)',
               borderRadius: '8px',
               padding: '6px',
               color: 'var(--text-muted)',
@@ -88,17 +108,15 @@ export default function Sidebar({ alertCount = 0, lang = 'km', onClose }) {
       {/* Nav */}
       <nav style={{ padding: '14px 10px', flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
         <div className="section-label" style={{ padding: '0 8px 8px', marginBottom: 0, fontSize: '0.64rem' }}>
-          {t.mainNav}
+          {userRole === 'user' ? (lang === 'km' ? 'កត់ត្រា' : 'REPORTING') : t.mainNav}
         </div>
 
-        {navLinks.map(({ to, end, icon, label, accent, badge }) => (
+        {navLinks.filter(l => !l.adminOnly).map(({ to, end, icon, label, accent, badge }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
-            onClick={() => {
-              if (onClose) onClose();
-            }}
+            onClick={() => { if (onClose) onClose(); }}
             style={({ isActive }) => ({
               display: 'flex',
               alignItems: 'center',
@@ -131,10 +149,50 @@ export default function Sidebar({ alertCount = 0, lang = 'km', onClose }) {
             )}
           </NavLink>
         ))}
+
+        {/* Admin-only section */}
+        {navLinks.some(l => l.adminOnly) && (
+          <>
+            <div className="section-label" style={{ padding: '12px 8px 6px', marginBottom: 0, fontSize: '0.64rem' }}>
+              {lang === 'km' ? 'ការគ្រប់គ្រង' : 'Administration'}
+            </div>
+            {navLinks.filter(l => l.adminOnly).map(({ to, end, icon, label, accent }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                onClick={() => { if (onClose) onClose(); }}
+                style={({ isActive }) => ({
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '11px 12px',
+                  borderRadius: 'var(--r-sm)',
+                  color: isActive ? 'var(--text-main)' : 'var(--text-sub)',
+                  background: isActive ? 'rgba(79,125,245,0.12)' : 'transparent',
+                  fontWeight: isActive ? 600 : 500,
+                  fontSize: '0.86rem',
+                  transition: 'var(--transition-fast)',
+                  borderLeft: isActive ? `3px solid ${accent}` : '3px solid transparent',
+                  paddingLeft: '10px'
+                })}
+              >
+                {({ isActive }) => (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ color: isActive ? accent : 'var(--text-muted)', display: 'flex' }}>
+                      {icon}
+                    </span>
+                    <span>{label}</span>
+                  </div>
+                )}
+              </NavLink>
+            ))}
+          </>
+        )}
       </nav>
 
-      {/* Footer Alert Card */}
-      {alertCount > 0 && (
+      {/* Footer Alert Card — admin only */}
+      {alertCount > 0 && userRole !== 'user' && (
         <div style={{ padding: '12px 10px 16px' }}>
           <div style={{
             background: 'var(--warning-subtle)',

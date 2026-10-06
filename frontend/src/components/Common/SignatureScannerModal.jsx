@@ -180,35 +180,21 @@ export default function SignatureScannerModal({
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 1000,
-      background: 'rgba(15, 23, 42, 0.85)',
-      backdropFilter: 'blur(8px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '16px'
-    }}>
-      <div style={{
+    <div className="modal-overlay">
+      <div className="modal-box" style={{
+        maxWidth: '520px',
         background: 'var(--bg-card, #1e293b)',
         border: '1.5px solid var(--primary-border, #3b82f640)',
-        borderRadius: '16px',
-        width: '100%', maxWidth: '520px',
-        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
-        overflow: 'hidden',
-        display: 'flex', flexDirection: 'column'
+        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
       }}>
         {/* Header */}
-        <div style={{
-          padding: '16px 20px',
-          borderBottom: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        <div className="modal-header" style={{
           background: 'rgba(30, 41, 59, 0.6)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{
-              width: '36px', height: '36px', borderRadius: '10px',
+          <div className="modal-title-group">
+            <div className="modal-icon" style={{
               background: 'var(--primary-subtle, rgba(59, 130, 246, 0.15))',
-              color: 'var(--primary, #3b82f6)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
+              color: 'var(--primary, #3b82f6)'
             }}>
               <ShieldCheck size={20} />
             </div>
@@ -223,15 +209,14 @@ export default function SignatureScannerModal({
           </div>
           <button
             onClick={onClose}
-            className="btn btn-ghost btn-sm"
-            style={{ borderRadius: '50%', padding: '6px', color: 'var(--text-muted)' }}
+            className="modal-close-btn"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Scanner Body */}
-        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           
           {/* Target Assignment Selector */}
           <div style={{ display: 'flex', gap: '10px' }}>

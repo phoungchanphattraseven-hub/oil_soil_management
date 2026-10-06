@@ -28,6 +28,29 @@ export default function LoginPage({ onLoginSuccess }) {
       return;
     }
     setLoading(true);
+
+    // ── Helper: check locally-managed users (created via admin panel) ──
+    const checkLocalUsers = (email, pass) => {
+      try {
+        const stored = localStorage.getItem('app_managed_users');
+        if (!stored) return null;
+        const localUsers = JSON.parse(stored);
+        const found = localUsers.find(u => u.email?.toLowerCase() === email);
+        if (!found) return null;
+        // Local users store plaintext password for simplicity
+        if (found.password && found.password !== pass) return null;
+        if (found.status === 'inactive') return { error: 'Account is inactive' };
+        return {
+          id: found.id,
+          name: found.name || found.email,
+          email: found.email,
+          role: found.role || 'user',
+          status: found.status || 'active',
+          token: `local-token-${found.id}`
+        };
+      } catch { return null; }
+    };
+
     try {
       const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
@@ -37,23 +60,45 @@ export default function LoginPage({ onLoginSuccess }) {
       const data = await res.json();
       if (res.ok && data.status === 'success') {
         setSuccess(true);
-        localStorage.setItem('app_session_token', data.token || 'authenticated');
+        const userData = data.data;
+        localStorage.setItem('app_session_token', userData.token || 'authenticated');
         localStorage.setItem('app_session_email', cleanEmail);
         localStorage.setItem('app_session_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
-        setTimeout(() => onLoginSuccess(cleanEmail), 900);
+        setTimeout(() => onLoginSuccess(cleanEmail, userData), 900);
       } else {
-        setError(data.message || data.detail || 'Invalid email or password.');
+        // Backend rejected — try locally-created users before showing error
+        const localUser = checkLocalUsers(cleanEmail, cleanPass);
+        if (localUser && !localUser.error) {
+          setSuccess(true);
+          localStorage.setItem('app_session_token', localUser.token);
+          localStorage.setItem('app_session_email', cleanEmail);
+          localStorage.setItem('app_session_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
+          setTimeout(() => onLoginSuccess(cleanEmail, localUser), 900);
+        } else {
+          setError(localUser?.error || data.message || data.detail || 'Invalid email or password.');
+        }
       }
     } catch (err) {
-      // Offline / server waking fallback: validate against admin credentials
+      // Offline — check .env admin first, then local users
       if (cleanEmail === 'phoungchanphattraseven@gmail.com' && cleanPass === 'YourAdminy7tl') {
         setSuccess(true);
+        const fallbackUserData = { role: 'admin', name: 'Admin', email: cleanEmail };
         localStorage.setItem('app_session_token', 'local-admin-token');
         localStorage.setItem('app_session_email', cleanEmail);
         localStorage.setItem('app_session_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
-        setTimeout(() => onLoginSuccess(cleanEmail), 900);
+        setTimeout(() => onLoginSuccess(cleanEmail, fallbackUserData), 900);
       } else {
-        setError('Cannot connect to server. Please check your credentials or try again.');
+        // Try locally-created users when fully offline
+        const localUser = checkLocalUsers(cleanEmail, cleanPass);
+        if (localUser && !localUser.error) {
+          setSuccess(true);
+          localStorage.setItem('app_session_token', localUser.token);
+          localStorage.setItem('app_session_email', cleanEmail);
+          localStorage.setItem('app_session_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
+          setTimeout(() => onLoginSuccess(cleanEmail, localUser), 900);
+        } else {
+          setError(localUser?.error || 'Cannot connect to server. Please try again.');
+        }
       }
     } finally {
       setLoading(false);

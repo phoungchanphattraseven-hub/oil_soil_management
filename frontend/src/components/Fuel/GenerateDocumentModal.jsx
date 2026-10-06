@@ -457,7 +457,7 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
           <div className="doc-header-left">
             <div className="doc-company">{meta.companyName || (isKm ? 'ការិយាល័យគ្រប់គ្រងប្រតិបត្តិការ' : 'Operations Management Office')}</div>
             <div className="doc-title">
-              {isKm ? 'របាយការណ៍ប្រើប្រាស់ និងបំពេញសាំងប្រចាំថ្ងៃ' : 'DAILY FUEL CONSUMPTION & REFILL REPORT'}
+              {isKm ? 'របាយការណ៍ប្រើប្រាស់ និងប្រេងចូលសាំងប្រចាំថ្ងៃ' : 'DAILY FUEL CONSUMPTION & REFILL REPORT'}
             </div>
             <div className="doc-subtitle">
               {isKm
@@ -518,8 +518,8 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
               <th style={{ width: '100px' }}>{isKm ? 'អ្នកបើកបរ' : 'Driver / Staff'}</th>
               <th style={{ width: '75px', whiteSpace: 'nowrap' }}>{isKm ? 'ម៉ោង' : 'Time'}</th>
               <th style={{ width: '55px' }}>{isKm ? 'វេន' : 'Shift'}</th>
-              <th className="th-vol" style={{ width: '80px' }}>{isKm ? 'ដកប្រើ (Out L)' : 'Fuel Out (L)'}</th>
-              <th className="th-vol" style={{ width: '85px', color: '#15803d' }}>{isKm ? 'បំពេញ (In L)' : 'Oil In (L)'}</th>
+              <th className="th-vol" style={{ width: '80px' }}>{isKm ? 'ប្រេងប្រើ (Out L)' : 'Fuel Out (L)'}</th>
+              <th className="th-vol" style={{ width: '85px', color: '#15803d' }}>{isKm ? 'ប្រេងចូល (In L)' : 'Oil In (L)'}</th>
               <th style={{ width: '75px', textAlign: 'center' }}>{isKm ? 'ហត្ថលេខា' : 'Signature'}</th>
             </tr>
           </thead>
@@ -556,7 +556,7 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
                           letterSpacing: '0.5px',
                           textTransform: 'uppercase'
                         }}>
-                          ▼ {isKm ? 'ប្រេងចូល / បំពេញស្តុក (OIL IN — Stock Refill Received Today)' : 'OIL IN — Stock Refill / Fuel Received Today'}
+                          ▼ {isKm ? 'ប្រេងចូល / ប្រេងចូលស្តុក (OIL IN — Stock Refill Received Today)' : 'OIL IN — Stock Refill / Fuel Received Today'}
                         </td>
                       </tr>
                       {oilInEntries.map((log, i) => {
@@ -576,7 +576,7 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
                                 background: '#15803d', color: '#fff',
                                 padding: '1px 5px', borderRadius: '3px', fontWeight: 700
                               }}>
-                                {isKm ? 'បំពេញស្តុក' : 'STOCK IN'}
+                                {isKm ? 'ប្រេងចូលស្តុក' : 'STOCK IN'}
                               </span>
                             </td>
                             <td className="plate" style={{ color: '#15803d', whiteSpace: 'nowrap' }}>
@@ -716,8 +716,8 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
               <th>{isKm ? 'ប្រតិបត្តិការ' : 'RECORDS'}</th>
               <th>{isKm ? 'វេនព្រឹក (MORNING)' : 'MORNING SHIFT'}</th>
               <th>{isKm ? 'វេនរសៀល (AFTERNOON)' : 'AFTERNOON SHIFT'}</th>
-              <th>{isKm ? 'សរុបដកប្រើ (OIL OUT)' : 'TOTAL OUT'}</th>
-              <th style={{ color: '#15803d' }}>{isKm ? 'សរុបបំពេញ (OIL IN)' : 'TOTAL IN'}</th>
+              <th>{isKm ? 'សរុបប្រេងប្រើ (OIL OUT)' : 'TOTAL OUT'}</th>
+              <th style={{ color: '#15803d' }}>{isKm ? 'សរុបប្រេងចូល (OIL IN)' : 'TOTAL IN'}</th>
             </tr>
           </thead>
           <tbody>
@@ -748,8 +748,8 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
             <thead>
               <tr>
                 <th>{isKm ? 'ស្តុកដើមគ្រា (Opening Stock)' : 'Opening Stock'}</th>
-                <th style={{ color: '#15803d' }}>{isKm ? '+ បំពេញស្តុក (Oil Refilled In)' : '+ Oil Refilled In'}</th>
-                <th style={{ color: '#b91c1c' }}>{isKm ? '- ដកប្រើប្រាស់ (Fuel Spent Out)' : '- Fuel Spent Out'}</th>
+                <th style={{ color: '#15803d' }}>{isKm ? '+ ប្រេងចូលស្តុក (Oil Refilled In)' : '+ Oil Refilled In'}</th>
+                <th style={{ color: '#b91c1c' }}>{isKm ? '- ប្រេងប្រើប្រាស់ (Fuel Spent Out)' : '- Fuel Spent Out'}</th>
                 <th>{isKm ? '= តុល្យភាពចុងគ្រា (Closing Balance)' : '= Closing Balance'}</th>
               </tr>
             </thead>
@@ -876,7 +876,7 @@ ${previewRef.current?.innerHTML || ''}
 
   return (
     <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="modal-box" style={{ maxWidth: previewOpen ? '900px' : '620px', transition: 'max-width 0.3s ease' }}>
+      <div className="modal-box" style={{ maxWidth: previewOpen ? '900px' : '620px', maxHeight: '92vh', transition: 'max-width 0.3s ease' }}>
         {/* Header */}
         <div className="modal-header">
           <div className="modal-title-group">
@@ -905,7 +905,7 @@ ${previewRef.current?.innerHTML || ''}
           </div>
         </div>
 
-        <div style={{ display: 'flex', minHeight: 0 }}>
+        <div style={{ display: 'flex', minHeight: 0, flex: 1, overflow: 'hidden' }}>
           {/* ── Form Panel ── */}
           <div style={{
             width: previewOpen ? '320px' : '100%',
@@ -913,7 +913,7 @@ ${previewRef.current?.innerHTML || ''}
             flexShrink: 0,
             borderRight: previewOpen ? '1px solid var(--border-subtle)' : 'none',
             overflowY: 'auto',
-            maxHeight: '75vh',
+            maxHeight: 'calc(92vh - 140px)',
             transition: 'width 0.3s ease'
           }}>
             <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -988,11 +988,11 @@ ${previewRef.current?.innerHTML || ''}
                 </div>
                 <div style={{ color: 'var(--text-sub)' }}>
                   {filteredLogs.length} {isKm ? 'ប្រតិបត្តិការ' : 'entries'} ·{' '}
-                  {isKm ? 'ដកប្រើ: ' : 'Out: '}
+                  {isKm ? 'ប្រេងប្រើ: ' : 'Out: '}
                   <strong>{filteredLogs.reduce((s, l) => s + (parseFloat(l.refill_liters) || 0), 0).toLocaleString()} L</strong>
                   {filteredLogs.reduce((s, l) => s + (parseFloat(l.oil_in) || 0), 0) > 0 && (
                     <span>
-                      {' · '}{isKm ? 'បំពេញស្តុក: ' : 'In: '}
+                      {' · '}{isKm ? 'ប្រេងចូលស្តុក: ' : 'In: '}
                       <strong style={{ color: '#15803d' }}>
                         +{filteredLogs.reduce((s, l) => s + (parseFloat(l.oil_in) || 0), 0).toLocaleString()} L
                       </strong>
@@ -1011,7 +1011,9 @@ ${previewRef.current?.innerHTML || ''}
           {/* ── Preview Panel ── */}
           {previewOpen && (
             <div style={{
-              flex: 1, overflowY: 'auto', maxHeight: '75vh',
+              flex: 1, 
+              overflowY: 'auto', 
+              maxHeight: 'calc(92vh - 140px)',
               background: '#e8e8e8',
               animation: 'fadeIn 0.25s ease'
             }}>
@@ -1064,7 +1066,7 @@ ${previewRef.current?.innerHTML || ''}
         </div>
 
         {/* Footer Actions */}
-        <div className="modal-footer" style={{ flexWrap: 'wrap', gap: '8px' }}>
+        <div className="modal-footer" style={{ flexWrap: 'wrap', gap: '8px', flexShrink: 0 }}>
           {previewOpen ? (
             <>
               <button onClick={handlePrint} className="btn btn-primary" style={{ flex: 1 }}>

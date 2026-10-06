@@ -14,7 +14,13 @@ export default function Layout({
   theme,
   setTheme,
   onLogout,
-  sessionEmail
+  sessionEmail,
+  userRole,
+  userName,
+  onExportData,
+  onImportData,
+  isOnline = true,
+  offlineQueueCount = 0
 }) {
   const [isSidebarVisible, setSidebarVisible] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -67,6 +73,7 @@ export default function Layout({
           <Sidebar
             alertCount={alertCount}
             lang={lang}
+            userRole={userRole}
             onClose={isMobile ? () => setSidebarVisible(false) : undefined}
           />
         </div>
@@ -86,6 +93,12 @@ export default function Layout({
           setSidebarVisible={setSidebarVisible}
           onLogout={onLogout}
           sessionEmail={sessionEmail}
+          userRole={userRole}
+          userName={userName}
+          onExportData={onExportData}
+          onImportData={onImportData}
+          isOnline={isOnline}
+          offlineQueueCount={offlineQueueCount}
         />
 
         <main className="app-main-content">
@@ -96,6 +109,7 @@ export default function Layout({
         <BottomNav
           alertCount={alertCount}
           lang={lang}
+          userRole={userRole}
         />
       </div>
     </div>

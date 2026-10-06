@@ -45,33 +45,19 @@ export default function AddStationModal({ open, onClose, onAddStation, lang = 'k
   return (
     <div
       onClick={handleBackdropClick}
-      style={{
-        position: 'fixed', inset: 0,
-        background: 'rgba(0, 0, 0, 0.75)',
-        backdropFilter: 'blur(6px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 1200, padding: '16px',
-        animation: 'fadeIn 0.2s ease'
-      }}
+      className="modal-overlay"
     >
-      <div className="card" style={{
-        width: '100%', maxWidth: '520px',
+      <div className="card modal-box" style={{
+        maxWidth: '520px',
         boxShadow: 'var(--shadow-modal)',
-        overflow: 'hidden',
         animation: 'slideUp 0.25s ease'
       }}>
         {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{
-              padding: '8px',
+        <div className="modal-header">
+          <div className="modal-title-group">
+            <div className="modal-icon" style={{
               background: 'var(--fuel-subtle)',
-              borderRadius: 'var(--radius-sm)',
-              color: 'var(--fuel-accent)',
-              display: 'flex'
+              color: 'var(--fuel-accent)'
             }}>
               <Fuel size={18} />
             </div>
@@ -86,13 +72,7 @@ export default function AddStationModal({ open, onClose, onAddStation, lang = 'k
           </div>
           <button
             onClick={onClose}
-            style={{
-              background: 'transparent', border: 'none',
-              padding: '6px', cursor: 'pointer', color: 'var(--text-muted)',
-              borderRadius: 'var(--radius-xs)', transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--danger-subtle)'; e.currentTarget.style.color = 'var(--danger)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+            className="modal-close-btn"
           >
             <X size={18} />
           </button>
@@ -100,7 +80,7 @@ export default function AddStationModal({ open, onClose, onAddStation, lang = 'k
 
         {/* Body */}
         <form onSubmit={handleSubmit}>
-          <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {/* Station Name */}
             <div className="form-group" style={{ margin: 0 }}>
               <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -167,11 +147,7 @@ export default function AddStationModal({ open, onClose, onAddStation, lang = 'k
           </div>
 
           {/* Footer */}
-          <div style={{
-            padding: '14px 20px',
-            borderTop: '1px solid var(--border-subtle)',
-            display: 'flex', justifyContent: 'flex-end', gap: '8px'
-          }}>
+          <div className="modal-footer" style={{ justifyContent: 'flex-end' }}>
             <button type="button" onClick={onClose} className="btn btn-secondary" style={{ padding: '8px 18px' }}>
               {lang === 'km' ? 'បោះបង់' : 'Cancel'}
             </button>

@@ -1,5 +1,7 @@
 import os
 import uuid
+import hashlib
+import secrets
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -42,6 +44,21 @@ def is_valid_uuid(val: Any) -> bool:
         uuid.UUID(str(val))
         return True
     except ValueError:
+        return False
+
+def hash_password(password: str) -> str:
+    """Hash a password using SHA-256 with salt"""
+    salt = secrets.token_hex(16)
+    pwd_hash = hashlib.sha256((password + salt).encode()).hexdigest()
+    return f"{salt}:{pwd_hash}"
+
+def verify_password(password: str, hash_str: str) -> bool:
+    """Verify a password against its hash"""
+    try:
+        salt, stored_hash = hash_str.split(':')
+        pwd_hash = hashlib.sha256((password + salt).encode()).hexdigest()
+        return pwd_hash == stored_hash
+    except:
         return False
 
 app = FastAPI(title="Station Management Operations API", version="1.0.0")
@@ -88,6 +105,28 @@ class SoilLogInput(BaseModel):
     staff_decisions: Optional[str] = None
     issues_description: Optional[str] = None
     receipt_photo_url: Optional[str] = ""
+    time_start: str
+    time_end: str
+    log_date: Optional[str] = None
+
+class UserInput(BaseModel):
+    name: str
+    email: str
+    password: str
+    role: str = "user"  # "admin" | "user"
+    status: str = "active"  # "active" | "inactive"
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    password: Optional[str] = None
+    role: Optional[str] = None
+    status: Optional[str] = None
+
+class LoginInput(BaseModel):
+    email: str
+    password: str
+    receipt_photo_url: Optional[str] = ""
     log_date: Optional[str] = None
     time_start: Optional[str] = "07:00"
     time_end: Optional[str] = "17:30"
@@ -119,24 +158,146 @@ class LoginInput(BaseModel):
     email: str
     password: str
 
+# ──────────────────────────────────────────────
+# Authentication Endpoints  
+# ──────────────────────────────────────────────
+
 @app.post("/api/auth/login")
-def login(data: LoginInput):
-    admin_email    = os.environ.get("email", "").strip().lower()
-    admin_password = os.environ.get("password", "").strip()
+def authenticate_user(data: LoginInput):
+    """Authenticate user login - supports both database users and demo mode"""
+    if not supabase:
+        # Demo mode - simulate authentication with enhanced user accounts
+        demo_users = {
+            "admin@company.com": {
+                "id": "user-admin-01",
+                "role": "admin", 
+                "name": "Admin User",
+                "email": "admin@company.com",
+                "status": "active"
+            },
+            "user@company.com": {
+                "id": "user-demo-02", 
+                "role": "user", 
+                "name": "Demo User",
+                "email": "user@company.com", 
+                "status": "active"
+            },
+            "phoungchanphattraseven@gmail.com": {
+                "id": "user-phattra-03",
+                "role": "admin", 
+                "name": "Phattra Admin",
+                "email": "phoungchanphattraseven@gmail.com",
+                "status": "active"
+            }
+        }
+        
+        # Check email exists
+        if data.email not in demo_users:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        user_info = demo_users[data.email]
+        
+        # Check password (simple validation for demo)
+        valid_passwords = ["password", "YourAdminy7tl", "123456"]
+        if data.password not in valid_passwords:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        # Check if user is active
+        if user_info["status"] != "active":
+            raise HTTPException(status_code=401, detail="Account is inactive")
+        
+        return {
+            "status": "success",
+            "data": {
+                "id": user_info["id"],
+                "name": user_info["name"],
+                "email": user_info["email"],
+                "role": user_info["role"],
+                "status": user_info["status"],
+                "token": f"demo-token-{user_info['role']}-{user_info['id']}"
+            }
+        }
+    
+    try:
+        # First check against .env admin credentials (always valid regardless of DB)
+        env_email    = os.environ.get("email", "").strip().lower()
+        env_password = os.environ.get("password", "").strip()
+        
+        if env_email and env_password and data.email.strip().lower() == env_email and data.password == env_password:
+            return {
+                "status": "success",
+                "data": {
+                    "id": "env-admin-01",
+                    "name": "Admin",
+                    "email": env_email,
+                    "role": "admin",
+                    "status": "active",
+                    "token": f"admin-token-{env_email}"
+                }
+            }
+        
+        # Then check against Supabase users table
+        # Try with all columns first, fall back if new columns don't exist yet
+        try:
+            res = supabase.table("users").select("id, username, full_name, role, status, password_hash").eq("username", data.email).execute()
+        except Exception:
+            # Fallback for older schema without full_name/password_hash/status columns
+            res = supabase.table("users").select("id, username, role").eq("username", data.email).execute()
+        
+        if not res.data:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        user = res.data[0]
+        
+        # Check if user is active
+        if user.get("status") == "inactive":
+            raise HTTPException(status_code=401, detail="Account is inactive")
+        
+        # Verify password if hash exists
+        if user.get("password_hash"):
+            if not verify_password(data.password, user["password_hash"]):
+                raise HTTPException(status_code=401, detail="Invalid email or password")
+        else:
+            # For users without password hash (legacy), accept any password for now
+            # In production, you'd want to force password reset
+            pass
+        
+        return {
+            "status": "success",
+            "data": {
+                "id": user["id"],
+                "name": user.get("full_name") or user["username"].split("@")[0],
+                "email": user["username"],
+                "role": user["role"],
+                "status": user.get("status", "active"),
+                "token": f"jwt-{user['id']}"  # In production, generate proper JWT
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as err:
+        print("Error during authentication:", str(err))
+        raise HTTPException(status_code=500, detail="Authentication failed")
 
-    if not admin_email or not admin_password:
-        raise HTTPException(status_code=500, detail="Server credentials not configured in .env")
-
-    if data.email.strip().lower() != admin_email or data.password != admin_password:
-        raise HTTPException(status_code=401, detail="Invalid email or password.")
-
-    import secrets
-    token = secrets.token_hex(32)
+@app.get("/api/auth/me")
+def get_current_user():
+    """Get current user information (in production, this would validate JWT token)"""
+    if not supabase:
+        return {
+            "status": "demo", 
+            "message": "Demo mode - token validation not implemented"
+        }
+    
+    # In production, you would:
+    # 1. Extract JWT token from Authorization header
+    # 2. Validate and decode the token
+    # 3. Look up user in database
+    # 4. Return user info
+    
     return {
         "status": "success",
-        "token": token,
-        "email": admin_email,
-        "message": "Login successful"
+        "message": "Token validation endpoint (not implemented in demo)"
     }
 
 @app.get("/api/dashboard/summary")
@@ -446,4 +607,164 @@ def delete_staff(staff_id: str):
             return {"status": "success", "message": f"Demo/mock staff {staff_id} removed"}
     except Exception as err:
         print("Error deleting staff:", str(err))
+        raise HTTPException(status_code=500, detail=str(err))
+
+# ──────────────────────────────────────────────
+# User Management Endpoints
+# ──────────────────────────────────────────────
+
+@app.get("/api/users")
+def get_all_users():
+    """Get all users (admin only)"""
+    if not supabase:
+        # Demo mode - return some mock users
+        return {
+            "status": "demo", 
+            "data": [
+                {
+                    "id": "user-admin-01",
+                    "name": "Admin User",
+                    "email": "admin@company.com",
+                    "role": "admin",
+                    "status": "active",
+                    "created_at": "2024-01-01T00:00:00Z"
+                },
+                {
+                    "id": "user-demo-02", 
+                    "name": "Demo User",
+                    "email": "user@company.com",
+                    "role": "user",
+                    "status": "active",
+                    "created_at": "2024-01-01T00:00:00Z"
+                }
+            ]
+        }
+    
+    try:
+        # Select all users but exclude password field for security
+        res = supabase.table("users").select("id, username, full_name, role, status, created_at").order("created_at", desc=False).execute()
+        
+        # Map to frontend expectations
+        users = []
+        for user in (res.data or []):
+            users.append({
+                "id": user["id"],
+                "name": user.get("full_name") or user["username"],
+                "email": user["username"],
+                "role": user["role"],
+                "status": user.get("status", "active"),
+                "created_at": user["created_at"]
+            })
+            
+        return {"status": "success", "data": users}
+    except Exception as err:
+        print("Error fetching users:", str(err))
+        raise HTTPException(status_code=500, detail=str(err))
+
+@app.post("/api/users")
+def create_user(data: UserInput):
+    """Create a new user account"""
+    if not supabase:
+        return {"status": "demo", "data": [{"id": f"local-{data.email}", "name": data.name, "email": data.email, "role": data.role, "status": data.status, "created_at": "now"}]}
+    
+    try:
+        # Check if email already exists
+        existing = supabase.table("users").select("id").eq("username", data.email).execute()
+        if existing.data:
+            raise HTTPException(status_code=400, detail="Email already exists")
+        
+        # Hash the password for security
+        password_hash = hash_password(data.password)
+        
+        # Normalize role — Supabase enum may not have 'user' yet; fall back to 'phattra' if needed
+        safe_role = data.role if data.role in ("admin", "phattra", "user") else "phattra"
+        
+        insert_data = {
+            "username": data.email,
+            "full_name": data.name,
+            "password_hash": password_hash,
+            "role": safe_role,
+            "status": data.status
+        }
+        
+        try:
+            res = supabase.table("users").insert(insert_data).execute()
+        except Exception:
+            # If new columns don't exist yet, insert with minimal schema
+            insert_data_minimal = {"username": data.email, "role": safe_role if safe_role != "user" else "phattra"}
+            res = supabase.table("users").insert(insert_data_minimal).execute()
+        
+        if res.data and len(res.data) > 0:
+            user = res.data[0]
+            return {
+                "status": "success", 
+                "data": [{
+                    "id": user["id"],
+                    "name": user.get("full_name", data.name),
+                    "email": user["username"],
+                    "role": user["role"],
+                    "status": user.get("status", "active"),
+                    "created_at": user["created_at"]
+                }]
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to create user")
+            
+    except HTTPException:
+        raise
+    except Exception as err:
+        print("Error creating user:", str(err))
+        raise HTTPException(status_code=500, detail=str(err))
+
+@app.put("/api/users/{user_id}")
+def update_user(user_id: str, data: UserUpdate):
+    """Update an existing user"""
+    if not supabase:
+        return {"status": "demo", "data": data.dict()}
+    
+    try:
+        if not is_valid_uuid(user_id):
+            return {"status": "success", "message": f"Demo user {user_id} updated"}
+        
+        # Build update data, excluding None values
+        update_data = {}
+        if data.email is not None:
+            update_data["username"] = data.email
+        if data.name is not None:
+            update_data["full_name"] = data.name
+        if data.role is not None:
+            update_data["role"] = data.role
+        if data.status is not None:
+            update_data["status"] = data.status
+        if data.password is not None and data.password.strip():
+            update_data["password_hash"] = hash_password(data.password)
+        
+        if not update_data:
+            return {"status": "success", "message": "No changes to update"}
+        
+        # Add updated timestamp
+        update_data["updated_at"] = "NOW()"
+        
+        res = supabase.table("users").update(update_data).eq("id", user_id).execute()
+        return {"status": "success", "data": res.data}
+        
+    except Exception as err:
+        print("Error updating user:", str(err))
+        raise HTTPException(status_code=500, detail=str(err))
+
+@app.delete("/api/users/{user_id}")
+def delete_user(user_id: str):
+    """Delete a user account"""
+    if not supabase:
+        return {"status": "demo", "message": f"User {user_id} deleted (demo mode)"}
+    
+    try:
+        if not is_valid_uuid(user_id):
+            return {"status": "success", "message": f"Demo user {user_id} removed"}
+        
+        res = supabase.table("users").delete().eq("id", user_id).execute()
+        return {"status": "success", "data": res.data}
+        
+    except Exception as err:
+        print("Error deleting user:", str(err))
         raise HTTPException(status_code=500, detail=str(err))

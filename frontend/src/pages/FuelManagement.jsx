@@ -39,7 +39,9 @@ export default function FuelManagement({
   onClearFuelLogs,
   savedArchives,
   setSavedArchives,
-  lang = 'km'
+  lang = 'km',
+  userRole = 'user',
+  assignedStation = { id: '', name: '' }
 }) {
   const [activeSubTab, setActiveSubTab] = useState('daily'); // 'daily' | 'calendar' | 'stations' | 'fleet' | 'sop' | 'archives'
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().substring(0, 10));
@@ -49,6 +51,13 @@ export default function FuelManagement({
   const [showDocModal, setShowDocModal] = useState(false);
   const [logFormDate, setLogFormDate] = useState('');
   const [docModalLogs, setDocModalLogs] = useState(null);
+
+  // Redirect regular users if they try to access admin-only tabs
+  React.useEffect(() => {
+    if (userRole !== 'admin' && ['stations', 'fleet', 'sop', 'archives'].includes(activeSubTab)) {
+      setActiveSubTab('daily');
+    }
+  }, [userRole, activeSubTab]);
 
   const lowStockStations = stations.filter(s => s.current_stock_liters < s.reorder_threshold_liters);
   const t = translations[lang] || translations.km;
@@ -187,53 +196,61 @@ export default function FuelManagement({
           </span>
         </button>
 
-        {/* Tab 3: Stations & Stock */}
-        <button
-          className={`office-subtab-btn ${activeSubTab === 'stations' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('stations')}
-        >
-          <Gauge size={15} />
-          <span>{lang === 'km' ? '៣. ស្ថានីយ៍ & ស្តុក' : '3. Stations & Stock'}</span>
-          <span
-            className="office-subtab-badge"
-            style={{
-              background: lowStockStations.length > 0 ? 'var(--danger-subtle)' : undefined,
-              color: lowStockStations.length > 0 ? 'var(--danger)' : undefined
-            }}
+        {/* Tab 3: Stations & Stock - Admin Only */}
+        {userRole === 'admin' && (
+          <button
+            className={`office-subtab-btn ${activeSubTab === 'stations' ? 'active' : ''}`}
+            onClick={() => setActiveSubTab('stations')}
           >
-            {stations.length} {lowStockStations.length > 0 ? `(${lowStockStations.length} !)` : ''}
-          </span>
-        </button>
+            <Gauge size={15} />
+            <span>{lang === 'km' ? '៣. ស្ថានីយ៍ & ស្តុក' : '3. Stations & Stock'}</span>
+            <span
+              className="office-subtab-badge"
+              style={{
+                background: lowStockStations.length > 0 ? 'var(--danger-subtle)' : undefined,
+                color: lowStockStations.length > 0 ? 'var(--danger)' : undefined
+              }}
+            >
+              {stations.length} {lowStockStations.length > 0 ? `(${lowStockStations.length} !)` : ''}
+            </span>
+          </button>
+        )}
 
-        {/* Tab 4: Staff & Fleet */}
-        <button
-          className={`office-subtab-btn ${activeSubTab === 'fleet' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('fleet')}
-        >
-          <Users size={15} />
-          <span>{lang === 'km' ? '៤. បុគ្គលិក & ស្ថានីយ៍' : '4. Staff & Fleet'}</span>
-          <span className="office-subtab-badge">
-            {staff.length} {lang === 'km' ? 'នាក់' : 'staff'}
-          </span>
-        </button>
+        {/* Tab 4: Staff & Fleet - Admin Only */}
+        {userRole === 'admin' && (
+          <button
+            className={`office-subtab-btn ${activeSubTab === 'fleet' ? 'active' : ''}`}
+            onClick={() => setActiveSubTab('fleet')}
+          >
+            <Users size={15} />
+            <span>{lang === 'km' ? '៤. បុគ្គលិក & ស្ថានីយ៍' : '4. Staff & Fleet'}</span>
+            <span className="office-subtab-badge">
+              {staff.length} {lang === 'km' ? 'នាក់' : 'staff'}
+            </span>
+          </button>
+        )}
 
-        {/* Tab 5: SOP Compliance Audit Matrix */}
-        <button
-          className={`office-subtab-btn ${activeSubTab === 'sop' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('sop')}
-        >
-          <ShieldCheck size={15} />
-          <span>{lang === 'km' ? '៥. បទដ្ឋាន SOP & សវនកម្ម' : '5. SOP Audit Matrix'}</span>
-        </button>
+        {/* Tab 5: SOP Compliance Audit Matrix - Admin Only */}
+        {userRole === 'admin' && (
+          <button
+            className={`office-subtab-btn ${activeSubTab === 'sop' ? 'active' : ''}`}
+            onClick={() => setActiveSubTab('sop')}
+          >
+            <ShieldCheck size={15} />
+            <span>{lang === 'km' ? '៥. បទដ្ឋាន SOP & សវនកម្ម' : '5. SOP Audit Matrix'}</span>
+          </button>
+        )}
 
-        {/* Tab 6: Saved Archives & Reports */}
-        <button
-          className={`office-subtab-btn ${activeSubTab === 'archives' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('archives')}
-        >
-          <Archive size={15} />
-          <span>{lang === 'km' ? '៦. ប័ណ្ណរក្សាទុក & ឯកសារ' : '6. Archives & Reports'}</span>
-        </button>
+        {/* Tab 6: Saved Archives & Reports - Admin Only */}
+        {userRole === 'admin' && (
+          <button
+            className={`office-subtab-btn ${activeSubTab === 'archives' ? 'active' : ''}`}
+            onClick={() => setActiveSubTab('archives')}
+          >
+            <Archive size={15} />
+            <span>{lang === 'km' ? '៦. ប័ណ្ណរក្សាទុក & ឯកសារ' : '6. Archives & Reports'}</span>
+          </button>
+        )}
       </div>
 
       {/* ── Sub-Tab Contents ── */}
@@ -311,6 +328,7 @@ export default function FuelManagement({
             initialViewMode="LIVE"
             savedArchives={savedArchives}
             setSavedArchives={setSavedArchives}
+            userRole={userRole}
           />
         </div>
       )}
@@ -327,7 +345,7 @@ export default function FuelManagement({
       )}
 
       {/* ── SUB-TAB 3: STATIONS & STOCK MANAGEMENT ── */}
-      {activeSubTab === 'stations' && (
+      {activeSubTab === 'stations' && userRole === 'admin' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div className="section-label">
@@ -394,7 +412,7 @@ export default function FuelManagement({
       )}
 
       {/* ── SUB-TAB 4: STAFF & FLEET DIRECTORY ── */}
-      {activeSubTab === 'fleet' && (
+      {activeSubTab === 'fleet' && userRole === 'admin' && (
         <StaffManager
           staff={staff}
           drivers={drivers}
@@ -409,7 +427,7 @@ export default function FuelManagement({
       )}
 
       {/* ── SUB-TAB 5: SOP COMPLIANCE AUDIT MATRIX ── */}
-      {activeSubTab === 'sop' && (
+      {activeSubTab === 'sop' && userRole === 'admin' && (
         <FuelSopTable
           stations={stations}
           fuelLogs={fuelLogs}
@@ -418,7 +436,7 @@ export default function FuelManagement({
       )}
 
       {/* ── SUB-TAB 6: SAVED ARCHIVES & REPORT CENTER ── */}
-      {activeSubTab === 'archives' && (
+      {activeSubTab === 'archives' && userRole === 'admin' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <FuelLogTable
             logs={fuelLogs}
@@ -436,6 +454,7 @@ export default function FuelManagement({
             initialViewMode="ARCHIVE"
             savedArchives={savedArchives}
             setSavedArchives={setSavedArchives}
+            userRole={userRole}
           />
         </div>
       )}
@@ -456,6 +475,7 @@ export default function FuelManagement({
         open={showLogForm}
         onClose={() => setShowLogForm(false)}
         initialDate={logFormDate || selectedDate}
+        assignedStation={assignedStation}
       />
 
       <AbbrCodeModal
