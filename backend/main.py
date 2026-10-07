@@ -3,7 +3,7 @@ import uuid
 import hashlib
 import secrets
 from pathlib import Path
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, Dict, Any
 from supabase import create_client, Client
@@ -302,7 +302,8 @@ def get_current_user():
     }
 
 @app.get("/api/dashboard/summary")
-def get_dashboard_summary():
+def get_dashboard_summary(response: Response):
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     if not supabase:
         return {"stations": [], "fuel_logs": [], "soil_logs": [], "staff": [], "message": "Supabase client not initialized"}
 

@@ -477,7 +477,7 @@ export default function App() {
     const initializeData = async () => {
       console.log('Initializing application data from backend...');
       try {
-        const response = await fetch(`${API_BASE_URL}/dashboard/summary`);
+        const response = await fetch(`${API_BASE_URL}/dashboard/summary`, { cache: 'no-store' });
         const data = await response.json();
 
         console.log('Backend connected — loading fresh data');
@@ -533,7 +533,7 @@ export default function App() {
         const retryId = setInterval(async () => {
           attempts++;
           try {
-            const retryRes = await fetch(`${API_BASE_URL}/dashboard/summary`);
+            const retryRes = await fetch(`${API_BASE_URL}/dashboard/summary`, { cache: 'no-store' });
             if (retryRes.ok) {
               clearInterval(retryId);
               setIsOnline(true);
@@ -550,13 +550,17 @@ export default function App() {
     initializeData();
   }, []);
 
-  // Periodic background sync every 5 minutes while online
+  // Frequent dashboard sync lets reports submitted by other users appear without a refresh.
   useEffect(() => {
     if (!isOnline) return;
 
-    const syncId = setInterval(async () => {
+    let syncInProgress = false;
+    const syncDashboard = async () => {
+      if (syncInProgress) return;
+      syncInProgress = true;
       try {
-        const res  = await fetch(`${API_BASE_URL}/dashboard/summary`);
+        const res = await fetch(`${API_BASE_URL}/dashboard/summary`, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Dashboard sync failed: ${res.status}`);
         const data = await res.json();
 
         // Merge: prefer backend records but keep any local-only entries
@@ -591,10 +595,24 @@ export default function App() {
       } catch (e) {
         console.warn('Periodic sync failed:', e.message);
         setIsOnline(false);
+      } finally {
+        syncInProgress = false;
       }
-    }, 300000); // every 5 minutes
+    };
 
-    return () => clearInterval(syncId);
+    const syncWhenActive = () => {
+      if (document.visibilityState === 'visible') syncDashboard();
+    };
+
+    const syncId = setInterval(syncDashboard, 10000); // every 10 seconds while open
+    window.addEventListener('focus', syncDashboard);
+    document.addEventListener('visibilitychange', syncWhenActive);
+
+    return () => {
+      clearInterval(syncId);
+      window.removeEventListener('focus', syncDashboard);
+      document.removeEventListener('visibilitychange', syncWhenActive);
+    };
   }, [isOnline]);
 
   // Reorder threshold low stock stations count (< 4,000 L)
