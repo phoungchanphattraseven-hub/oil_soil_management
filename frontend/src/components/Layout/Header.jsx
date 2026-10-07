@@ -117,6 +117,9 @@ export default function Header({
 
       {/* Right: Controls */}
       <div className="header-right">
+        <div className="mobile-date-display" title={currentDate}>
+          <span>{new Date().toLocaleDateString(lang === 'km' ? 'km-KH' : 'en-US', { month: 'short', day: 'numeric' })}</span>
+        </div>
         {/* Data Persistence Status & Actions — hidden on mobile to save space */}
         <div className="data-status-group hide-on-mobile">
           {/* Online/Offline Status */}
@@ -269,7 +272,7 @@ export default function Header({
         {/* Theme Toggle (Sun / Moon) */}
         {setTheme && (
           <button
-            className="header-icon-btn hide-on-mobile"
+            className="header-icon-btn mobile-theme-toggle"
             onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
             title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
           >

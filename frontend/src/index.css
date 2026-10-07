@@ -1343,6 +1343,16 @@ body:has(.modal-overlay) {
   font-size: 0.77rem;
 }
 
+.mobile-date-display {
+  display: none;
+  align-items: center;
+  gap: 3px;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .header-icon-btn {
   display: flex;
   align-items: center;
@@ -1722,33 +1732,69 @@ body:has(.modal-overlay) {
 
   .mobile-app-brand {
     display: flex !important;
+    flex: 1;
+    min-width: 0;
+    gap: 6px !important;
+  }
+  .mobile-brand-icon { width: 25px !important; height: 25px !important; }
+  .mobile-brand-title {
+    font-size: 0.77rem !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .desktop-date-display {
     display: none !important;
   }
 
-  .app-header {
-    padding: 0 10px !important;
-    height: 50px !important;
+  .mobile-date-display {
+    display: flex !important;
+    padding: 4px 6px;
+    border-radius: var(--r-xs);
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-subtle);
+    font-size: 0.63rem !important;
   }
+
+  .app-header {
+    padding: 0 8px !important;
+    height: 52px !important;
+  }
+  .header-left { gap: 5px !important; min-width: 0; flex: 1; }
+  .header-right { gap: 4px !important; flex-shrink: 0; }
+  .sidebar-toggle-btn { padding: 5px !important; }
 
   /* Compact language toggle on mobile */
   .header-pill-toggle {
-    padding: 4px 7px !important;
-    gap: 3px !important;
-    font-size: 0.7rem !important;
+    padding: 4px 5px !important;
+    gap: 2px !important;
+    font-size: 0.65rem !important;
+  }
+  .header-pill-toggle span:first-child { font-size: 0.72rem !important; }
+  .header-pill-toggle span:last-child { font-size: 0.62rem !important; }
+
+  .mobile-theme-toggle {
+    display: flex !important;
+    padding: 5px 6px !important;
+  }
+  .mobile-theme-toggle svg {
+    width: 15px !important;
+    height: 15px !important;
   }
 
   /* Compact logout button on mobile */
   #logout-btn {
-    padding: 5px 8px !important;
+    padding: 5px 6px !important;
     font-size: 0;  /* hide text, icon only */
   }
   #logout-btn svg {
     width: 15px !important;
     height: 15px !important;
   }
+  .user-profile-btn { padding: 0 !important; }
+  .user-profile-btn > div:first-child { width: 27px !important; height: 27px !important; font-size: 0.68rem !important; }
 
   /* Bottom nav visible */
   .mobile-bottom-nav {
