@@ -140,7 +140,7 @@ export default function AddStationModal({ open, onClose, onAddStation, onEditSta
                 value={initialStock}
                 onChange={(e) => setInitialStock(e.target.value)}
                 min="0"
-                step="100"
+                step="any"
               />
               <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '4px' }}>
                 {lang === 'km' ? 'កែប្រែស្តុកដោយប្រុងប្រយ័ត្ន ព្រោះវាប៉ះពាល់ដល់របាយការណ៍សាំង។' : 'Change stock carefully; it affects fuel reports.'}
@@ -150,11 +150,11 @@ export default function AddStationModal({ open, onClose, onAddStation, onEditSta
             <div className="grid-form-2">
               <div className="form-group" style={{ margin: 0 }}>
                 <label className="form-label">{lang === 'km' ? 'សមត្ថភាពធុង (L)' : 'Tank Capacity (L)'}</label>
-                <input type="number" className="form-control" value={targetCapacity} onChange={e => setTargetCapacity(e.target.value)} min="0" step="100" />
+                <input type="number" className="form-control" value={targetCapacity} onChange={e => setTargetCapacity(e.target.value)} min="0" step="any" />
               </div>
               <div className="form-group" style={{ margin: 0 }}>
                 <label className="form-label">{lang === 'km' ? 'កម្រិតព្រមានទាប (L)' : 'Low-stock Alert (L)'}</label>
-                <input type="number" className="form-control" value={reorderThreshold} onChange={e => setReorderThreshold(e.target.value)} min="0" step="100" />
+                <input type="number" className="form-control" value={reorderThreshold} onChange={e => setReorderThreshold(e.target.value)} min="0" step="any" />
               </div>
             </div>
 

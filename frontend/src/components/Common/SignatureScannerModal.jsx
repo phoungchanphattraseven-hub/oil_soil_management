@@ -1,6 +1,93 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera, CheckCircle2, RefreshCw, X, User, Car, ShieldCheck, Sparkles, Upload } from 'lucide-react';
 
+// Extract dark ink from uneven paper/camera lighting. Unlike one global cutoff,
+// this compares each pixel with its surrounding area and removes small specks
+// plus shadows connected to the crop edges.
+function cleanSignatureImage(ctx, width, height) {
+  const image = ctx.getImageData(0, 0, width, height);
+  const total = width * height;
+  const gray = new Uint8Array(total);
+  const integral = new Uint32Array((width + 1) * (height + 1));
+
+  for (let y = 0; y < height; y++) {
+    let rowSum = 0;
+    for (let x = 0; x < width; x++) {
+      const index = y * width + x;
+      const pixel = index * 4;
+      // Perceived brightness is more reliable than a plain RGB average.
+      const brightness = Math.round(image.data[pixel] * 0.299 + image.data[pixel + 1] * 0.587 + image.data[pixel + 2] * 0.114);
+      gray[index] = brightness;
+      rowSum += brightness;
+      integral[(y + 1) * (width + 1) + x + 1] = integral[y * (width + 1) + x + 1] + rowSum;
+    }
+  }
+
+  const ink = new Uint8Array(total);
+  const radius = Math.max(12, Math.round(Math.min(width, height) * 0.045));
+  for (let y = 0; y < height; y++) {
+    const top = Math.max(0, y - radius);
+    const bottom = Math.min(height - 1, y + radius);
+    for (let x = 0; x < width; x++) {
+      const left = Math.max(0, x - radius);
+      const right = Math.min(width - 1, x + radius);
+      const stride = width + 1;
+      const sum = integral[(bottom + 1) * stride + right + 1] - integral[top * stride + right + 1] - integral[(bottom + 1) * stride + left] + integral[top * stride + left];
+      const mean = sum / ((right - left + 1) * (bottom - top + 1));
+      const index = y * width + x;
+      // Ink must be clearly darker than its local background and not light gray.
+      if (gray[index] < mean - 17 && gray[index] < 205) ink[index] = 1;
+    }
+  }
+
+  const visited = new Uint8Array(total);
+  const keep = new Uint8Array(total);
+  const queue = new Int32Array(total);
+  const edgeMargin = Math.max(3, Math.round(Math.min(width, height) * 0.02));
+  const minimumPixels = Math.max(20, Math.round(total * 0.00003));
+
+  for (let start = 0; start < total; start++) {
+    if (!ink[start] || visited[start]) continue;
+    let head = 0;
+    let tail = 0;
+    let touchesEdge = false;
+    queue[tail++] = start;
+    visited[start] = 1;
+
+    while (head < tail) {
+      const current = queue[head++];
+      const x = current % width;
+      const y = Math.floor(current / width);
+      if (x < edgeMargin || x >= width - edgeMargin || y < edgeMargin || y >= height - edgeMargin) touchesEdge = true;
+      const neighbours = [current - 1, current + 1, current - width, current + width];
+      for (const next of neighbours) {
+        if (next < 0 || next >= total) continue;
+        const nextX = next % width;
+        if (Math.abs(nextX - x) > 1) continue; // Prevent wrapping across rows.
+        if (ink[next] && !visited[next]) {
+          visited[next] = 1;
+          queue[tail++] = next;
+        }
+      }
+    }
+
+    if (!touchesEdge && tail >= minimumPixels) {
+      for (let i = 0; i < tail; i++) keep[queue[i]] = 1;
+    }
+  }
+
+  for (let i = 0; i < total; i++) {
+    const pixel = i * 4;
+    if (keep[i]) {
+      image.data[pixel] = 15; image.data[pixel + 1] = 23; image.data[pixel + 2] = 42;
+    } else {
+      image.data[pixel] = 255; image.data[pixel + 1] = 255; image.data[pixel + 2] = 255;
+    }
+    image.data[pixel + 3] = 255;
+  }
+  ctx.putImageData(image, 0, 0);
+}
+
 export default function SignatureScannerModal({
   isOpen,
   onClose,
@@ -148,19 +235,7 @@ export default function SignatureScannerModal({
     canvas.height = Math.max(1, Math.round(cropHeight));
     ctx.drawImage(video, cropX, cropY, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
 
-    // Signature processing filter (Enhance contrast for crisp signature scan)
-    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const d = imgData.data;
-    for (let i = 0; i < d.length; i += 4) {
-      const avg = (d[i] + d[i + 1] + d[i + 2]) / 3;
-      // High contrast threshold to accentuate ink signature lines
-      if (avg > 180) {
-        d[i] = 255; d[i + 1] = 255; d[i + 2] = 255; // White background
-      } else {
-        d[i] = 15; d[i + 1] = 23; d[i + 2] = 42; // Dark slate signature ink
-      }
-    }
-    ctx.putImageData(imgData, 0, 0);
+    cleanSignatureImage(ctx, canvas.width, canvas.height);
 
     const dataUrl = canvas.toDataURL('image/png');
 
