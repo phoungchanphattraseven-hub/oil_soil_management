@@ -113,7 +113,7 @@ export default function StaffSelector({
             border: '1px solid var(--border-medium)',
             borderRadius: 'var(--radius-sm)',
             boxShadow: 'var(--shadow-modal)',
-            zIndex: 1060, maxHeight: '260px', display: 'flex', flexDirection: 'column'
+            zIndex: 1060, maxHeight: '320px', display: 'flex', flexDirection: 'column'
           }}>
             {/* Search input inside dropdown */}
             <div style={{ padding: '8px', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -127,7 +127,7 @@ export default function StaffSelector({
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   onClick={e => e.stopPropagation()}
-                  style={{ paddingLeft: '26px', height: '30px', fontSize: '0.77rem' }}
+                  style={{ paddingLeft: '26px', height: '40px', minHeight: '40px', boxSizing: 'border-box', lineHeight: 1.2, fontSize: '16px' }}
                 />
               </div>
               {positions.length > 0 && (
@@ -136,7 +136,7 @@ export default function StaffSelector({
                   value={positionFilter}
                   onChange={e => setPositionFilter(e.target.value)}
                   onClick={e => e.stopPropagation()}
-                  style={{ height: '30px', fontSize: '0.75rem' }}
+                  style={{ height: '40px', minHeight: '40px', boxSizing: 'border-box', lineHeight: 1.2, fontSize: '16px' }}
                   aria-label={isKm ? 'ត្រងតាមតួនាទី' : 'Filter by position'}
                 >
                   <option value="ALL">{isKm ? `គ្រប់តួនាទី (${staff.length})` : `All positions (${staff.length})`}</option>
