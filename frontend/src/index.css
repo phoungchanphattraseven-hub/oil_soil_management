@@ -856,6 +856,47 @@ body:has(.modal-overlay) {
   overscroll-behavior: contain;
 }
 
+/* ─── Signature Scanner ──────────────────────────────── */
+.scanner-viewport {
+  height: 240px !important;
+}
+
+@media (max-width: 768px) {
+  .scanner-modal {
+    max-height: 90vh !important;
+  }
+  .scanner-modal-body {
+    padding: 14px !important;
+    gap: 12px !important;
+  }
+  .scanner-targets {
+    gap: 8px !important;
+  }
+  .scanner-targets > div:first-child {
+    flex: 0.9 !important;
+  }
+  .scanner-targets > div:last-child {
+    flex: 1.1 !important;
+  }
+  .scanner-targets .form-control {
+    min-height: 42px !important;
+    padding-top: 7px !important;
+    padding-bottom: 7px !important;
+  }
+  .scanner-viewport {
+    height: min(48vw, 215px) !important;
+    min-height: 168px;
+    border-radius: 10px !important;
+  }
+  .scanner-guide {
+    width: 80% !important;
+    height: 50% !important;
+  }
+  .scanner-actions .btn {
+    min-height: 42px;
+  }
+}
+
 /* ─── Alert / Toast ──────────────────────────────────── */
 .alert {
   display: flex;

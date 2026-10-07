@@ -12,6 +12,8 @@ export default function SignatureScannerModal({
   const isKm = lang === 'km';
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const scannerViewportRef = useRef(null);
+  const scanGuideRef = useRef(null);
   
   const [stream, setStream] = useState(null);
   const [cameraError, setCameraError] = useState(false);
@@ -119,12 +121,32 @@ export default function SignatureScannerModal({
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
 
-    // Match canvas dimensions to video feed
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    const sourceWidth = video.videoWidth || 640;
+    const sourceHeight = video.videoHeight || 480;
+    const viewportRect = scannerViewportRef.current?.getBoundingClientRect();
+    const guideRect = scanGuideRef.current?.getBoundingClientRect();
 
-    // Draw video frame to canvas
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // The guide is drawn over a `cover` video feed. Convert its on-screen
+    // rectangle back to camera pixels, so only the boxed signature is saved.
+    let cropX = 0;
+    let cropY = 0;
+    let cropWidth = sourceWidth;
+    let cropHeight = sourceHeight;
+    if (viewportRect && guideRect) {
+      const scale = Math.max(viewportRect.width / sourceWidth, viewportRect.height / sourceHeight);
+      const renderedWidth = sourceWidth * scale;
+      const renderedHeight = sourceHeight * scale;
+      const offsetX = (viewportRect.width - renderedWidth) / 2;
+      const offsetY = (viewportRect.height - renderedHeight) / 2;
+      cropX = Math.max(0, (guideRect.left - viewportRect.left - offsetX) / scale);
+      cropY = Math.max(0, (guideRect.top - viewportRect.top - offsetY) / scale);
+      cropWidth = Math.min(sourceWidth - cropX, guideRect.width / scale);
+      cropHeight = Math.min(sourceHeight - cropY, guideRect.height / scale);
+    }
+
+    canvas.width = Math.max(1, Math.round(cropWidth));
+    canvas.height = Math.max(1, Math.round(cropHeight));
+    ctx.drawImage(video, cropX, cropY, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
 
     // Signature processing filter (Enhance contrast for crisp signature scan)
     const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -181,15 +203,15 @@ export default function SignatureScannerModal({
 
   return (
     <div className="modal-overlay">
-      <div className="modal-box" style={{
+      <div className="modal-box scanner-modal" style={{
         maxWidth: '520px',
-        background: 'var(--bg-card, #1e293b)',
-        border: '1.5px solid var(--primary-border, #3b82f640)',
+        background: 'var(--surface-card)',
+        border: '1.5px solid var(--primary-border)',
         boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
       }}>
         {/* Header */}
         <div className="modal-header" style={{
-          background: 'rgba(30, 41, 59, 0.6)'
+          background: 'var(--surface-subtle)'
         }}>
           <div className="modal-title-group">
             <div className="modal-icon" style={{
@@ -199,10 +221,10 @@ export default function SignatureScannerModal({
               <ShieldCheck size={20} />
             </div>
             <div>
-              <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--text-main, #f8fafc)' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>
                 {isKm ? 'ស្កេនហត្ថលេខាឌីជីថល' : 'Digital Signature Scanner'}
               </h3>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted, #94a3b8)', margin: 0 }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>
                 {isKm ? 'ស្កេន និងរក្សាទុកហត្ថលេខាសម្រាប់បុគ្គលិក / រថយន្ត' : 'Scan and assign signature to staff or fleet'}
               </p>
             </div>
@@ -216,10 +238,10 @@ export default function SignatureScannerModal({
         </div>
 
         {/* Scanner Body */}
-        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="modal-body scanner-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           
           {/* Target Assignment Selector */}
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div className="scanner-targets" style={{ display: 'flex', gap: '10px' }}>
             <div style={{ flex: 1 }}>
               <label className="form-label" style={{ fontSize: '0.76rem', marginBottom: '4px' }}>
                 {isKm ? 'ប្រភេទតម្រូវការ:' : 'Assign Target:'}
@@ -232,7 +254,7 @@ export default function SignatureScannerModal({
                   if (e.target.value === 'staff' && staff.length > 0) setSelectedTargetId(staff[0].id);
                   if (e.target.value === 'driver' && drivers.length > 0) setSelectedTargetId(drivers[0].id || drivers[0].name);
                 }}
-                style={{ fontSize: '0.82rem', height: '36px' }}
+                style={{ fontSize: '16px', height: '42px', lineHeight: 1.2 }}
               >
                 <option value="staff">{isKm ? 'បុគ្គលិក (Staff)' : 'Staff Member'}</option>
                 <option value="driver">{isKm ? 'អ្នកបើកបរ / រថយន្ត (Fleet/Driver)' : 'Fleet Driver'}</option>
@@ -247,7 +269,7 @@ export default function SignatureScannerModal({
                 className="form-control"
                 value={selectedTargetId}
                 onChange={e => setSelectedTargetId(e.target.value)}
-                style={{ fontSize: '0.82rem', height: '36px' }}
+                style={{ fontSize: '16px', height: '42px', lineHeight: 1.2 }}
               >
                 {selectedType === 'staff' ? (
                   staff.map(s => (
@@ -263,12 +285,12 @@ export default function SignatureScannerModal({
           </div>
 
           {/* Scanner View / Captured Preview */}
-          <div style={{
+          <div ref={scannerViewportRef} className="scanner-viewport" style={{
             position: 'relative',
             width: '100%', height: '240px',
             borderRadius: '12px', overflow: 'hidden',
-            background: '#0f172a',
-            border: '2px dashed var(--primary-border, #3b82f640)',
+            background: cameraError ? 'var(--surface-subtle)' : '#0f172a',
+            border: '2px dashed var(--primary-border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
             {!scannedImage ? (
@@ -282,8 +304,8 @@ export default function SignatureScannerModal({
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                   {/* Bounding Box Format & Laser Beam */}
-                  <div style={{
-                    position: 'absolute', width: '75%', height: '65%',
+                  <div ref={scanGuideRef} className="scanner-guide" style={{
+                    position: 'absolute', width: '78%', height: '52%',
                     border: '2px solid var(--primary, #3b82f6)',
                     borderRadius: '8px',
                     boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.65)',
@@ -304,13 +326,13 @@ export default function SignatureScannerModal({
                       animation: 'scanAnimation 2s infinite ease-in-out'
                     }} />
 
-                    <span style={{ fontSize: '0.72rem', color: '#94a3b8', background: 'rgba(0,0,0,0.6)', padding: '2px 8px', borderRadius: '4px' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#e2e8f0', background: 'rgba(15,23,42,0.78)', padding: '4px 9px', borderRadius: '999px', fontWeight: 600 }}>
                       {isKm ? 'ដាក់ហត្ថលេខាក្នុងប្រអប់' : 'Place signature inside box'}
                     </span>
                   </div>
                 </>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: '#94a3b8', padding: '20px', textAlign: 'center' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', padding: '20px', textAlign: 'center' }}>
                   <Camera size={36} style={{ opacity: 0.5 }} />
                   <span style={{ fontSize: '0.82rem' }}>
                     {isKm ? 'មិនអាចបើកកាមេរ៉ាបានទេ (Camera restricted)' : 'Camera access unavailable'}
@@ -345,7 +367,7 @@ export default function SignatureScannerModal({
           <canvas ref={canvasRef} style={{ display: 'none' }} />
 
           {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="scanner-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center' }}>
             {!scannedImage ? (
               <>
                 <label className="btn btn-ghost btn-sm" style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>
