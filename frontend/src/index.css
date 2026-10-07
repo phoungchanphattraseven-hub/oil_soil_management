@@ -758,6 +758,12 @@ select.form-control option {
   z-index: 1100;
   padding: 20px;
   animation: fadeInOverlay 0.15s ease;
+  overscroll-behavior: contain;
+}
+
+/* Keep page content fixed while any modal is open. */
+body:has(.modal-overlay) {
+  overflow: hidden;
 }
 
 .modal-box {
@@ -822,6 +828,7 @@ select.form-control option {
   overflow-y: auto;
   flex: 1;
   min-height: 0;
+  overscroll-behavior: contain;
 }
 
 .modal-footer {
@@ -839,12 +846,14 @@ select.form-control option {
   overflow-y: auto;
   flex: 1;
   min-height: 0;
+  overscroll-behavior: contain;
 }
 
 .modal-form-content {
   overflow-y: auto;
   max-height: 60vh;
   padding: 20px;
+  overscroll-behavior: contain;
 }
 
 /* ─── Alert / Toast ──────────────────────────────────── */

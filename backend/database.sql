@@ -41,14 +41,19 @@ CREATE TABLE fuel_stations (
 CREATE TABLE staff (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL,
+    staff_id VARCHAR(50),
     gender VARCHAR(20) DEFAULT 'Male',
     station_name VARCHAR(100),
     license_plate VARCHAR(50),
     phone VARCHAR(50),
     role VARCHAR(50),
     photo_url TEXT,
+    signature_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+-- MIGRATION (if table already exists in Supabase, run this once):
+-- ALTER TABLE staff ADD COLUMN IF NOT EXISTS signature_url TEXT;
+-- ALTER TABLE staff ADD COLUMN IF NOT EXISTS staff_id VARCHAR(50);
 
 -- Step 6: Create fuel_logs table
 CREATE TABLE fuel_logs (
@@ -128,5 +133,4 @@ CREATE POLICY "Allow all access to fuel_stations" ON fuel_stations FOR ALL USING
 CREATE POLICY "Allow all access to staff" ON staff FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access to fuel_logs" ON fuel_logs FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access to soil_logs" ON soil_logs FOR ALL USING (true) WITH CHECK (true);
-
 

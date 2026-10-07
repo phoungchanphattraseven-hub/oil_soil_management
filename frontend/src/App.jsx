@@ -363,20 +363,23 @@ export default function App() {
   };
 
   // Handlers: Manage staff — synced with backend API
+  const toStaffApiData = (member) => ({
+    name: member.name,
+    staff_id: member.staff_id || '',
+    gender: member.gender || 'Male',
+    station_name: member.working_at || member.station_name || '',
+    license_plate: member.license_plate || '',
+    phone: member.phone || '',
+    role: member.role || '',
+    photo_url: member.photo_url || '',
+    signature_url: member.signature_url || '',
+  });
+
   const handleAddStaff = async (member) => {
     // Optimistic update
     setStaff(prev => [member, ...prev]);
 
-    const apiData = {
-      name: member.name,
-      gender: member.gender,
-      station_name: member.station_name,
-      license_plate: member.license_plate,
-      phone: member.phone,
-      role: member.role,
-      photo_url: member.photo_url || '',
-      signature_url: member.signature_url || '',
-    };
+    const apiData = toStaffApiData(member);
 
     const result = await makeApiCall(
       'staff',
@@ -386,8 +389,10 @@ export default function App() {
       (resData) => {
         if (resData.data && resData.data[0]) {
           // Replace local temp id with real Supabase UUID
+          // Map station_name back to working_at for UI compatibility
           const created = resData.data[0];
-          setStaff(prev => prev.map(s => s.id === member.id ? { ...created } : s));
+          const normalized = { ...created, working_at: created.station_name || created.working_at || '' };
+          setStaff(prev => prev.map(s => s.id === member.id ? normalized : s));
         }
       }
     );
@@ -397,27 +402,29 @@ export default function App() {
     } else if (!result.success) {
       console.error('Failed to save staff member:', result.error);
     }
+    return result;
   };
 
   const handleEditStaff = async (updated) => {
     setStaff(prev => prev.map(s => s.id === updated.id ? updated : s));
 
-    const apiData = {
-      name: updated.name,
-      gender: updated.gender,
-      station_name: updated.station_name,
-      license_plate: updated.license_plate,
-      phone: updated.phone,
-      role: updated.role,
-      photo_url: updated.photo_url || '',
-      signature_url: updated.signature_url || '',
-    };
+    const apiData = toStaffApiData(updated);
+    const isSupabaseRecord = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(updated.id || '');
+    const method = isSupabaseRecord ? 'PUT' : 'POST';
+    const url = isSupabaseRecord ? `${API_BASE_URL}/staff/${updated.id}` : `${API_BASE_URL}/staff`;
 
     const result = await makeApiCall(
-      'edit_staff',
-      `${API_BASE_URL}/staff/${updated.id}`,
-      'PUT',
-      apiData
+      isSupabaseRecord ? 'edit_staff' : 'staff',
+      url,
+      method,
+      apiData,
+      (resData) => {
+        if (resData.data && resData.data[0]) {
+          const saved = resData.data[0];
+          const normalized = { ...saved, working_at: saved.station_name || saved.working_at || '' };
+          setStaff(prev => prev.map(s => s.id === updated.id ? normalized : s));
+        }
+      }
     );
 
     if (result.queued) {
@@ -425,6 +432,7 @@ export default function App() {
     } else if (!result.success) {
       console.error('Failed to edit staff member:', result.error);
     }
+    return result;
   };
 
   const handleDeleteStaff = async (id) => {
@@ -489,7 +497,9 @@ export default function App() {
           setSoilLogs(data.soil_logs);
         }
         if (data.staff && Array.isArray(data.staff) && data.staff.length > 0) {
-          setStaff(data.staff);
+          // Normalize: map station_name → working_at for UI compatibility
+          const normalized = data.staff.map(s => ({ ...s, working_at: s.station_name || s.working_at || '' }));
+          setStaff(normalized);
         }
 
         setIsOnline(true);
@@ -573,7 +583,8 @@ export default function App() {
             .sort((a, b) => new Date(b.created_at || b.log_date) - new Date(a.created_at || a.log_date)));
         }
         if (data.staff?.length > 0) {
-          setStaff(prev => mergeById(data.staff, prev));
+          const normalized = data.staff.map(s => ({ ...s, working_at: s.station_name || s.working_at || '' }));
+          setStaff(prev => mergeById(normalized, prev));
         }
 
         await processOfflineQueue();
@@ -622,6 +633,31 @@ export default function App() {
     } else if (!result.success) {
       console.error('Failed to save fuel station:', result.error);
     }
+  };
+
+  const handleEditStation = async (updatedStation) => {
+    setFuelStations(prev => prev.map(station => station.id === updatedStation.id ? updatedStation : station));
+    const apiData = {
+      name: updatedStation.name || updatedStation.station_name,
+      location: updatedStation.location || '',
+      current_stock_liters: Number(updatedStation.current_stock_liters) || 0,
+      target_capacity_liters: Number(updatedStation.target_capacity_liters) || 0,
+      reorder_threshold_liters: Number(updatedStation.reorder_threshold_liters) || 0
+    };
+    const result = await makeApiCall(
+      'edit_station',
+      `${API_BASE_URL}/fuel/station/${updatedStation.id}`,
+      'PUT',
+      apiData,
+      (resData) => {
+        if (resData.data?.[0]) {
+          const saved = { ...resData.data[0], name: resData.data[0].station_name || apiData.name };
+          setFuelStations(prev => prev.map(station => station.id === updatedStation.id ? saved : station));
+        }
+      }
+    );
+    if (!result.success && !result.queued) console.error('Failed to update station:', result.error);
+    return result;
   };
 
   // Handler: Delete a station
@@ -1006,6 +1042,7 @@ export default function App() {
                   onSaveSignature={handleSaveSignature}
                   onAddFuelLog={handleAddFuelLog}
                   onAddStation={handleAddStation}
+                  onEditStation={handleEditStation}
                   onDeleteStation={handleDeleteStation}
                   onDeleteFuelLog={handleDeleteFuelLog}
                   onEditFuelLog={handleEditFuelLog}

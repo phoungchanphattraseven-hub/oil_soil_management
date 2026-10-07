@@ -133,6 +133,7 @@ class LoginInput(BaseModel):
 
 class StaffInput(BaseModel):
     name: str
+    staff_id: Optional[str] = ""
     gender: Optional[str] = "Male"
     station_name: Optional[str] = ""
     license_plate: Optional[str] = ""
@@ -335,6 +336,25 @@ def create_fuel_station(data: StationInput):
         return {"status": "success", "data": res.data}
     except Exception as err:
         print("Error creating station:", str(err))
+        raise HTTPException(status_code=500, detail=str(err))
+
+@app.put("/api/fuel/station/{station_id}")
+def update_fuel_station(station_id: str, data: StationInput):
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Supabase is not configured")
+    if not is_valid_uuid(station_id):
+        raise HTTPException(status_code=400, detail="A valid Supabase station ID is required for updates")
+    try:
+        res = supabase.table("fuel_stations").update({
+            "station_name": data.name,
+            "location": data.location,
+            "current_stock_liters": data.current_stock_liters,
+            "target_capacity_liters": data.target_capacity_liters,
+            "reorder_threshold_liters": data.reorder_threshold_liters
+        }).eq("id", station_id).execute()
+        return {"status": "success", "data": res.data}
+    except Exception as err:
+        print("Error updating station:", str(err))
         raise HTTPException(status_code=500, detail=str(err))
 
 @app.delete("/api/fuel/station/{station_id}")
@@ -541,7 +561,7 @@ def log_soil_entry(data: SoilLogInput):
 @app.get("/api/staff")
 def get_all_staff():
     if not supabase:
-        return {"status": "demo", "data": []}
+        raise HTTPException(status_code=503, detail="Supabase is not configured")
     try:
         res = supabase.table("staff").select("*").order("created_at", desc=False).execute()
         return {"status": "success", "data": res.data or []}
@@ -552,10 +572,11 @@ def get_all_staff():
 @app.post("/api/staff")
 def create_staff(data: StaffInput):
     if not supabase:
-        return {"status": "demo", "data": data.dict()}
+        raise HTTPException(status_code=503, detail="Supabase is not configured")
     try:
         insert_data = {
             "name": data.name,
+            "staff_id": data.staff_id or "",
             "gender": data.gender or "Male",
             "station_name": data.station_name or "",
             "license_plate": data.license_plate or "",
@@ -574,10 +595,11 @@ def create_staff(data: StaffInput):
 @app.put("/api/staff/{staff_id}")
 def update_staff(staff_id: str, data: StaffInput):
     if not supabase:
-        return {"status": "demo", "data": data.dict()}
+        raise HTTPException(status_code=503, detail="Supabase is not configured")
     try:
         update_data = {
             "name": data.name,
+            "staff_id": data.staff_id or "",
             "gender": data.gender or "Male",
             "station_name": data.station_name or "",
             "license_plate": data.license_plate or "",
@@ -586,11 +608,12 @@ def update_staff(staff_id: str, data: StaffInput):
             "photo_url": data.photo_url or "",
             "signature_url": data.signature_url or "",
         }
-        if is_valid_uuid(staff_id):
-            res = supabase.table("staff").update(update_data).eq("id", staff_id).execute()
-            return {"status": "success", "data": res.data}
-        else:
-            return {"status": "success", "message": f"Demo staff {staff_id} updated"}
+        if not is_valid_uuid(staff_id):
+            raise HTTPException(status_code=400, detail="A valid Supabase staff ID is required for updates")
+        res = supabase.table("staff").update(update_data).eq("id", staff_id).execute()
+        return {"status": "success", "data": res.data}
+    except HTTPException:
+        raise
     except Exception as err:
         print("Error updating staff:", str(err))
         raise HTTPException(status_code=500, detail=str(err))
@@ -598,13 +621,14 @@ def update_staff(staff_id: str, data: StaffInput):
 @app.delete("/api/staff/{staff_id}")
 def delete_staff(staff_id: str):
     if not supabase:
-        return {"status": "demo", "message": f"Staff {staff_id} deleted (demo mode)"}
+        raise HTTPException(status_code=503, detail="Supabase is not configured")
     try:
-        if is_valid_uuid(staff_id):
-            res = supabase.table("staff").delete().eq("id", staff_id).execute()
-            return {"status": "success", "data": res.data}
-        else:
-            return {"status": "success", "message": f"Demo/mock staff {staff_id} removed"}
+        if not is_valid_uuid(staff_id):
+            raise HTTPException(status_code=400, detail="A valid Supabase staff ID is required for deletion")
+        res = supabase.table("staff").delete().eq("id", staff_id).execute()
+        return {"status": "success", "data": res.data}
+    except HTTPException:
+        raise
     except Exception as err:
         print("Error deleting staff:", str(err))
         raise HTTPException(status_code=500, detail=str(err))

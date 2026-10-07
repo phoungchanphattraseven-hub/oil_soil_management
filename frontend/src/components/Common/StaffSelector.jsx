@@ -13,14 +13,19 @@ export default function StaffSelector({
 }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [search, setSearch] = useState('');
+  const [positionFilter, setPositionFilter] = useState('ALL');
   const isKm = lang === 'km';
 
   const selectedMember = staff.find(s => s.id === selectedStaffId) || null;
 
+  const positions = [...new Set(staff.map(s => s.role?.trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b));
+
   const filteredStaff = staff.filter(s => {
-    if (!search) return true;
+    const matchesPosition = positionFilter === 'ALL' || s.role?.trim() === positionFilter;
+    if (!search) return matchesPosition;
     const q = search.toLowerCase();
-    return (
+    return matchesPosition && (
       s.name?.toLowerCase().includes(q) ||
       s.license_plate?.toLowerCase().includes(q) ||
       s.role?.toLowerCase().includes(q) ||
@@ -32,6 +37,7 @@ export default function StaffSelector({
     onSelectStaff(member);
     setShowDropdown(false);
     setSearch('');
+    setPositionFilter('ALL');
   };
 
   const handleClear = (e) => {
@@ -39,6 +45,7 @@ export default function StaffSelector({
     onSelectStaff(null);
     setShowDropdown(false);
     setSearch('');
+    setPositionFilter('ALL');
   };
 
   return (
@@ -109,7 +116,7 @@ export default function StaffSelector({
             zIndex: 1060, maxHeight: '260px', display: 'flex', flexDirection: 'column'
           }}>
             {/* Search input inside dropdown */}
-            <div style={{ padding: '8px', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 }}>
+            <div style={{ padding: '8px', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <div style={{ position: 'relative' }}>
                 <Search size={12} style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input
@@ -123,10 +130,29 @@ export default function StaffSelector({
                   style={{ paddingLeft: '26px', height: '30px', fontSize: '0.77rem' }}
                 />
               </div>
+              {positions.length > 0 && (
+                <select
+                  className="form-control"
+                  value={positionFilter}
+                  onChange={e => setPositionFilter(e.target.value)}
+                  onClick={e => e.stopPropagation()}
+                  style={{ height: '30px', fontSize: '0.75rem' }}
+                  aria-label={isKm ? 'ត្រងតាមតួនាទី' : 'Filter by position'}
+                >
+                  <option value="ALL">{isKm ? `គ្រប់តួនាទី (${staff.length})` : `All positions (${staff.length})`}</option>
+                  {positions.map(position => {
+                    const count = staff.filter(member => member.role?.trim() === position).length;
+                    return <option key={position} value={position}>{position} ({count})</option>;
+                  })}
+                </select>
+              )}
             </div>
 
             {/* List */}
-            <div style={{ overflowY: 'auto', flex: 1, padding: '4px' }}>
+            <div style={{ overflowY: 'auto', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', flex: 1, padding: '4px' }}>
+              <div style={{ padding: '4px 6px 6px', fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                {isKm ? `បង្ហាញ ${filteredStaff.length} នាក់` : `Showing ${filteredStaff.length} staff`}
+              </div>
               {filteredStaff.length === 0 ? (
                 <div style={{ padding: '16px', textAlign: 'center', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                   {isKm ? 'រកមិនឃើញ' : 'No results found'}

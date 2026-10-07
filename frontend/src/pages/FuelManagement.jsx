@@ -11,11 +11,14 @@ import StockGauge from '../components/Dashboard/StockGauge';
 import AlertBanner from '../components/Dashboard/AlertBanner';
 import AbbrCodeModal from '../components/Common/AbbrCodeModal';
 import {
-  Fuel, Plus, Tag, Trash2, Gauge, FileText,
+  Fuel, Plus, Tag, Trash2, Pencil, Gauge, FileText,
   Calendar, Layers, Users, Zap, Archive, CheckCircle2,
   ShieldCheck, Building2, FileCheck, Landmark, CheckSquare
 } from 'lucide-react';
 import { translations } from '../data/translations';
+
+const FUEL_SUBTAB_STORAGE_KEY = 'app_fuel_active_subtab';
+const FUEL_SUBTABS = ['daily', 'calendar', 'stations', 'fleet', 'sop', 'archives'];
 
 export default function FuelManagement({
   stations = [],
@@ -33,6 +36,7 @@ export default function FuelManagement({
   onSaveSignature,
   onAddFuelLog,
   onAddStation,
+  onEditStation,
   onDeleteStation,
   onDeleteFuelLog,
   onEditFuelLog,
@@ -43,9 +47,17 @@ export default function FuelManagement({
   userRole = 'user',
   assignedStation = { id: '', name: '' }
 }) {
-  const [activeSubTab, setActiveSubTab] = useState('daily'); // 'daily' | 'calendar' | 'stations' | 'fleet' | 'sop' | 'archives'
+  const [activeSubTab, setActiveSubTab] = useState(() => {
+    try {
+      const saved = localStorage.getItem(FUEL_SUBTAB_STORAGE_KEY);
+      return FUEL_SUBTABS.includes(saved) ? saved : 'daily';
+    } catch {
+      return 'daily';
+    }
+  });
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().substring(0, 10));
   const [showAddStation, setShowAddStation] = useState(false);
+  const [editingStation, setEditingStation] = useState(null);
   const [showLogForm, setShowLogForm] = useState(false);
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [showDocModal, setShowDocModal] = useState(false);
@@ -58,6 +70,11 @@ export default function FuelManagement({
       setActiveSubTab('daily');
     }
   }, [userRole, activeSubTab]);
+
+  // Return to the same Fuel sub-tab after a refresh.
+  React.useEffect(() => {
+    try { localStorage.setItem(FUEL_SUBTAB_STORAGE_KEY, activeSubTab); } catch (_) {}
+  }, [activeSubTab]);
 
   const lowStockStations = stations.filter(s => s.current_stock_liters < s.reorder_threshold_liters);
   const t = translations[lang] || translations.km;
@@ -387,6 +404,14 @@ export default function FuelManagement({
                         {s.current_stock_liters < (s.reorder_threshold_liters || 4000) ? t.reorderNeeded : t.normalStock}
                       </span>
                       <button
+                        onClick={() => { setEditingStation(s); setShowAddStation(true); }}
+                        title={lang === 'km' ? 'កែប្រែស្ថានីយ៍' : 'Edit station'}
+                        className="btn btn-ghost btn-icon btn-sm"
+                        style={{ color: 'var(--primary)' }}
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
                         onClick={() => handleDeleteStationClick(s.id)}
                         title={t.deleteStation || 'Delete'}
                         className="btn btn-ghost btn-icon btn-sm"
@@ -462,8 +487,10 @@ export default function FuelManagement({
       {/* ── Modals ── */}
       <AddStationModal
         open={showAddStation}
-        onClose={() => setShowAddStation(false)}
+        onClose={() => { setShowAddStation(false); setEditingStation(null); }}
         onAddStation={onAddStation}
+        onEditStation={onEditStation}
+        station={editingStation}
         lang={lang}
       />
 
