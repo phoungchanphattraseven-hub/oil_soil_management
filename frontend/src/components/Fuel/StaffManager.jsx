@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import {
-  User, Plus, Trash2, Search, Pencil, X, Check, Car,
+  User, Plus, Trash2, Search, Pencil, X, Check, Car, Fuel,
   Phone, Briefcase, MapPin, ChevronDown, Users,
-  CheckCircle2, UserPlus, Camera, ShieldCheck, Sparkles, LayoutGrid, List
+  CheckCircle2, UserPlus, Camera, ShieldCheck, Sparkles, LayoutGrid, List, Eye, Maximize2
 } from 'lucide-react';
 import ImageUploader from '../Common/ImageUploader';
 import SignatureScannerModal from '../Common/SignatureScannerModal';
@@ -48,7 +48,7 @@ function getCustomPositions() {
   }
 }
 
-function StaffCard({ staff, lang, onEdit, onDelete, confirmDeleteId, setConfirmDeleteId }) {
+function StaffCard({ staff, lang, onView, onEdit, onDelete, confirmDeleteId, setConfirmDeleteId }) {
   const isKm = lang === 'km';
   const initials = staff.name
     ? staff.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
@@ -113,6 +113,14 @@ function StaffCard({ staff, lang, onEdit, onDelete, confirmDeleteId, setConfirmD
         </div>
 
         <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+          <button
+            onClick={() => onView(staff)}
+            className="btn btn-ghost btn-sm"
+            style={{ padding: '4px 6px', color: 'var(--text-sub)' }}
+            title={isKm ? 'មើលព័ត៌មានលម្អិត' : 'View profile'}
+          >
+            <Eye size={14} />
+          </button>
           <button
             onClick={() => onEdit(staff)}
             className="btn btn-ghost btn-sm"
@@ -214,6 +222,127 @@ function StaffCard({ staff, lang, onEdit, onDelete, confirmDeleteId, setConfirmD
   );
 }
 
+function StaffProfileModal({ staff, fuelLogs = [], lang, onClose }) {
+  const [preview, setPreview] = useState(null);
+  if (!staff) return null;
+  const isKm = lang === 'km';
+  const initials = staff.name?.split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase() || 'ST';
+  const fields = [
+    { label: isKm ? 'លេខសម្គាល់បុគ្គលិក' : 'Staff ID', value: staff.staff_id },
+    { label: isKm ? 'តួនាទី' : 'Position', value: staff.role },
+    { label: isKm ? 'ស្ថានីយ៍ / កន្លែងធ្វើការ' : 'Station / Work Location', value: staff.working_at || staff.station_name },
+    { label: isKm ? 'លេខទូរស័ព្ទ' : 'Phone Number', value: staff.phone },
+    { label: isKm ? 'ភេទ' : 'Gender', value: staff.gender },
+    { label: isKm ? 'ផ្លាកលេខឡាន' : 'License Plate', value: staff.license_plate },
+  ];
+  const normalizedPlate = staff.license_plate?.trim().toUpperCase();
+  const vehicleFuelLogs = normalizedPlate
+    ? fuelLogs
+      .filter(log => log.license_plate?.trim().toUpperCase() === normalizedPlate)
+      .sort((a, b) => new Date(b.time_in || 0) - new Date(a.time_in || 0))
+    : [];
+  const totalFuelUsed = vehicleFuelLogs.reduce((sum, log) => sum + (parseFloat(log.refill_liters) || 0), 0);
+  const recentFuelLogs = vehicleFuelLogs.slice(0, 3);
+
+  return (
+    <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="card modal-box" style={{ maxWidth: '510px' }} role="dialog" aria-modal="true" aria-label={isKm ? 'ព័ត៌មានលម្អិតបុគ្គលិក' : 'Staff profile details'}>
+        <div className="modal-header">
+          <div className="modal-title-group">
+            <div className="modal-icon" style={{ background: 'var(--primary-subtle)', color: 'var(--primary)' }}><User size={18} /></div>
+            <div>
+              <h3 style={{ fontSize: '0.98rem', fontWeight: 700, margin: 0 }}>{isKm ? 'ព័ត៌មានលម្អិតបុគ្គលិក' : 'Staff Profile'}</h3>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>{isKm ? 'ព័ត៌មានទំនាក់ទំនង និងការងារ' : 'Contact and work details'}</p>
+            </div>
+          </div>
+          <button type="button" className="modal-close-btn" onClick={onClose} aria-label={isKm ? 'បិទ' : 'Close'}><X size={18} /></button>
+        </div>
+        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '13px', padding: '12px', background: 'var(--primary-subtle)', borderRadius: 'var(--r-sm)' }}>
+            {staff.photo_url ? (
+              <button
+                type="button"
+                className="staff-image-preview-trigger"
+                onClick={() => setPreview({ src: staff.photo_url, alt: staff.name, label: isKm ? 'រូបថតបុគ្គលិក' : 'Staff photo', round: true })}
+                title={isKm ? 'ចុចដើម្បីមើលរូបធំ' : 'Click to view full-size image'}
+                aria-label={isKm ? 'មើលរូបថតបុគ្គលិកធំ' : 'View staff photo in full size'}
+              >
+                <img src={staff.photo_url} alt={staff.name} />
+                <span><Maximize2 size={16} /></span>
+              </button>
+            ) : (
+              <div style={{ width: '62px', height: '62px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.05rem', fontWeight: 800 }}>{initials}</div>
+            )}
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)' }}>{staff.name}</div>
+              <div style={{ marginTop: '3px', fontSize: '0.78rem', color: 'var(--primary)', fontWeight: 700 }}>{staff.role || (isKm ? 'មិនកំណត់តួនាទី' : 'No position assigned')}</div>
+            </div>
+          </div>
+          <div className="grid-form-2" style={{ gap: '10px' }}>
+            {fields.map(field => (
+              <div key={field.label} style={{ padding: '10px 11px', border: '1px solid var(--border-subtle)', background: 'var(--surface-subtle)', borderRadius: 'var(--r-xs)', minWidth: 0 }}>
+                <div style={{ fontSize: '0.66rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '3px' }}>{field.label}</div>
+                <div style={{ fontSize: '0.82rem', color: field.value ? 'var(--text-main)' : 'var(--text-muted)', fontFamily: field.label.includes('ID') || field.label.includes('ផ្លាក') ? 'monospace' : 'inherit', overflowWrap: 'anywhere' }}>{field.value || '—'}</div>
+              </div>
+            ))}
+          </div>
+          {normalizedPlate && (
+            <div style={{ paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  <Fuel size={14} style={{ color: 'var(--fuel-accent)' }} />
+                  {isKm ? 'ប្រវត្តិប្រើប្រាស់សាំងរថយន្ត' : 'Vehicle Fuel History'}
+                </div>
+                <span style={{ padding: '3px 8px', background: 'var(--fuel-subtle)', borderRadius: '999px', color: 'var(--fuel-accent)', fontSize: '0.76rem', fontWeight: 800 }}>
+                  {totalFuelUsed.toLocaleString()} L
+                </span>
+              </div>
+              {recentFuelLogs.length ? (
+                <div style={{ display: 'flex', flexDirection: 'column', border: '1px solid var(--border-subtle)', borderRadius: 'var(--r-xs)', overflow: 'hidden' }}>
+                  {recentFuelLogs.map((log, index) => (
+                    <div key={log.id || `${log.time_in}-${index}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '8px 10px', background: index % 2 ? 'var(--surface-subtle)' : 'transparent', fontSize: '0.78rem' }}>
+                      <span style={{ color: 'var(--text-sub)' }}>{log.time_in?.substring(0, 10) || '—'}{log.shift ? ` · ${log.shift}` : ''}</span>
+                      <strong style={{ color: 'var(--fuel-accent)' }}>{(parseFloat(log.refill_liters) || 0).toLocaleString()} L</strong>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>{isKm ? 'មិនទាន់មានប្រវត្តិប្រើប្រាស់សាំងសម្រាប់រថយន្តនេះ' : 'No fuel entries recorded for this vehicle.'}</span>
+              )}
+            </div>
+          )}
+          <div style={{ paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '7px' }}>{isKm ? 'ហត្ថលេខា' : 'Signature'}</div>
+            {staff.signature_url ? (
+              <button
+                type="button"
+                className="staff-signature-preview-trigger"
+                onClick={() => setPreview({ src: staff.signature_url, alt: isKm ? 'ហត្ថលេខា' : 'Signature', label: isKm ? 'ហត្ថលេខា' : 'Signature', round: false })}
+                title={isKm ? 'ចុចដើម្បីមើលរូបធំ' : 'Click to view full-size image'}
+                aria-label={isKm ? 'មើលហត្ថលេខាធំ' : 'View signature in full size'}
+              >
+                <img src={staff.signature_url} alt={isKm ? 'ហត្ថលេខា' : 'Signature'} />
+                <span><Maximize2 size={16} /></span>
+              </button>
+            ) : <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>{isKm ? 'មិនទាន់មានហត្ថលេខា' : 'No signature saved'}</span>}
+          </div>
+        </div>
+      </div>
+      {preview && (
+        <div className="image-lightbox" role="dialog" aria-modal="true" aria-label={preview.label} onClick={() => setPreview(null)}>
+          <div className="image-lightbox-content" onClick={event => event.stopPropagation()}>
+            <div className="image-lightbox-header">
+              <span>{preview.label}</span>
+              <button type="button" onClick={() => setPreview(null)} aria-label={isKm ? 'បិទ' : 'Close'}><X size={20} /></button>
+            </div>
+            <img className={preview.round ? 'image-lightbox-photo' : 'image-lightbox-signature'} src={preview.src} alt={preview.alt} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function StaffForm({ initial = {}, stations = [], onSave, onCancel, lang }) {
   const isKm = lang === 'km';
   const [customPositions, setCustomPositions] = useState(getCustomPositions);
@@ -286,6 +415,10 @@ function StaffForm({ initial = {}, stations = [], onSave, onCancel, lang }) {
           </label>
           <select className="form-control" value={form.gender} onChange={e => set('gender', e.target.value)}>
             <option value="">{isKm ? '— ជ្រើស —' : '— Select —'}</option>
+            {/* Keep existing values visible after switching the app language. */}
+            {form.gender && !GENDER_OPTIONS[lang]?.includes(form.gender) && (
+              <option value={form.gender}>{form.gender}</option>
+            )}
             {GENDER_OPTIONS[lang]?.map(g => <option key={g} value={g}>{g}</option>)}
           </select>
         </div>
@@ -300,6 +433,10 @@ function StaffForm({ initial = {}, stations = [], onSave, onCancel, lang }) {
           </label>
           <select className="form-control" value={form.role} onChange={e => set('role', e.target.value)}>
             <option value="">{isKm ? '— ជ្រើស —' : '— Select —'}</option>
+            {/* Roles saved in the other language remain selected instead of appearing blank. */}
+            {form.role && ![...ROLE_OPTIONS[lang], ...customPositions].includes(form.role) && (
+              <option value={form.role}>{form.role}</option>
+            )}
             {ROLE_OPTIONS[lang]?.map(r => <option key={r} value={r}>{r}</option>)}
             {customPositions.length > 0 && (
               <optgroup label={isKm ? 'មុខតំណែងដែលបានបង្កើត' : 'Custom positions'}>
@@ -423,6 +560,7 @@ export default function StaffManager({
   const [successMsg, setSuccessMsg] = useState('');
   const [showScannerModal, setShowScannerModal] = useState(false);
   const [viewMode, setViewMode] = useState('cards');
+  const [viewingStaff, setViewingStaff] = useState(null);
 
   const triggerToast = (msg) => {
     setSuccessMsg(msg);
@@ -504,6 +642,8 @@ export default function StaffManager({
     setEditingStaff(s);
     setShowForm(true);
   };
+
+  const handleView = (s) => setViewingStaff(s);
 
   const totalLitersAll = fuelLogs.reduce((sum, l) => sum + (parseFloat(l.refill_liters) || 0), 0);
 
@@ -815,6 +955,7 @@ export default function StaffManager({
                           </>
                         ) : (
                           <>
+                            <button onClick={() => handleView(s)} className="btn btn-ghost btn-sm" title={isKm ? 'មើលព័ត៌មានលម្អិត' : 'View profile'} style={{ padding: '4px 7px', color: 'var(--text-sub)' }}><Eye size={14} /></button>
                             <button onClick={() => handleEdit(s)} className="btn btn-ghost btn-sm" title={isKm ? 'កែប្រែ' : 'Edit'} style={{ padding: '4px 7px', color: 'var(--primary)' }}><Pencil size={14} /></button>
                             <button onClick={() => setConfirmDeleteId(s.id)} className="btn btn-ghost btn-sm" title={isKm ? 'លុប' : 'Delete'} style={{ padding: '4px 7px', color: 'var(--danger)' }}><Trash2 size={14} /></button>
                           </>
@@ -832,6 +973,7 @@ export default function StaffManager({
                   key={s.id}
                   staff={s}
                   lang={lang}
+                  onView={handleView}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                   confirmDeleteId={confirmDeleteId}
@@ -843,6 +985,8 @@ export default function StaffManager({
           )}
         </>
       )}
+
+      <StaffProfileModal staff={viewingStaff} fuelLogs={fuelLogs} lang={lang} onClose={() => setViewingStaff(null)} />
 
       {/* Signature Camera Scanner Modal */}
       <SignatureScannerModal

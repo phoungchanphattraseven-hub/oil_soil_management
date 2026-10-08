@@ -84,39 +84,6 @@ const PRINT_CSS = `
     color: #64748b;
     font-weight: 500;
   }
-  .doc-header-right {
-    text-align: right;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
-  }
-  .doc-badge {
-    display: inline-block;
-    background: #f1f5f9;
-    border: 1px solid #cbd5e1;
-    border-radius: 3px;
-    padding: 2px 7px;
-    font-size: 8pt;
-    font-weight: 700;
-    color: #334155;
-    letter-spacing: 0.5px;
-  }
-  .stamp-box {
-    border: 1.5px dashed #94a3b8;
-    border-radius: 4px;
-    width: 72px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 7pt;
-    color: #64748b;
-    text-align: center;
-    line-height: 1.2;
-    background: #fafafa;
-  }
-
   /* Meta Card */
   .meta-card {
     background: #f8fafc;
@@ -347,7 +314,8 @@ const PRINT_CSS = `
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 50px;
-    margin-top: 6px;
+    width: min(100%, 620px);
+    margin: 6px auto 0;
     padding-top: 6px;
     page-break-inside: avoid;
     break-inside: avoid;
@@ -463,13 +431,6 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
               {isKm
                 ? `${meta.projectName || 'គម្រោងការដ្ឋាន'} — លេខកូដទម្រង់: ${docRef}`
                 : `${meta.projectName || 'Site Project'} — Form Ref: ${docRef}`}
-            </div>
-          </div>
-
-          <div className="doc-header-right">
-            <span className="doc-badge">OFFICIAL FORM</span>
-            <div className="stamp-box">
-              {isKm ? 'ត្រាផ្លូវការ\nOFFICIAL SEAL' : 'OFFICIAL\nSTAMP / SEAL'}
             </div>
           </div>
         </div>
@@ -781,7 +742,7 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
             <div className="sig-date-line">{isKm ? 'កាលបរិច្ឆេទ: ..... / ..... / 202...' : 'Date: ..... / ..... / 202...'}</div>
             <div className="sig-line"></div>
             <div className="sig-caption">{isKm ? 'ឈ្មោះ និងហត្ថលេខា / Name & Signature' : 'Name & Signature'}</div>
-            <div style={{ fontSize: '7.6pt', color: '#94a3b8', marginTop: '2px' }}>{isKm ? 'តួនាទី / Title: ....................................' : 'Title: ....................................'}</div>
+            <div style={{ fontSize: '7.6pt', color: '#94a3b8', marginTop: '2px' }}>{isKm ? 'តួនាទី / Title: មេការការដ្ឋាន' : 'Title: Site Foreman'}</div>
           </div>
         </div>
 

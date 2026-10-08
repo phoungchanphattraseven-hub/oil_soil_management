@@ -856,6 +856,128 @@ body:has(.modal-overlay) {
   overscroll-behavior: contain;
 }
 
+/* Staff profile media previews */
+.staff-image-preview-trigger,
+.staff-signature-preview-trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  overflow: hidden;
+  cursor: zoom-in;
+  background: #fff;
+  border: 1px solid var(--border-subtle);
+}
+
+.staff-image-preview-trigger {
+  width: 62px;
+  height: 62px;
+  flex: 0 0 62px;
+  border-radius: 50%;
+  border: 2px solid var(--primary-border);
+}
+
+.staff-image-preview-trigger img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.staff-signature-preview-trigger {
+  width: 100%;
+  min-height: 58px;
+  justify-content: flex-start;
+  padding: 8px 42px 8px 12px;
+  border-radius: var(--r-xs);
+}
+
+.staff-signature-preview-trigger img {
+  max-width: 180px;
+  max-height: 54px;
+  object-fit: contain;
+}
+
+.staff-image-preview-trigger span,
+.staff-signature-preview-trigger span {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.72);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.staff-image-preview-trigger:hover span,
+.staff-image-preview-trigger:focus-visible span,
+.staff-signature-preview-trigger:hover span,
+.staff-signature-preview-trigger:focus-visible span {
+  opacity: 1;
+}
+
+.image-lightbox {
+  position: fixed;
+  z-index: 1100;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(2, 6, 23, 0.78);
+}
+
+.image-lightbox-content {
+  width: min(720px, 100%);
+  max-height: min(88vh, 800px);
+  padding: 12px;
+  overflow: auto;
+  background: #fff;
+  border-radius: var(--r-md);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.38);
+}
+
+.image-lightbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+  color: var(--text-main);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.image-lightbox-header button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--text-muted);
+  border-radius: var(--r-xs);
+}
+
+.image-lightbox-header button:hover { background: var(--surface-hover); color: var(--text-main); }
+
+.image-lightbox-photo,
+.image-lightbox-signature {
+  display: block;
+  max-width: 100%;
+  max-height: calc(88vh - 82px);
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+.image-lightbox-photo { border-radius: var(--r-sm); }
+.image-lightbox-signature { min-width: min(500px, 100%); }
+
 /* ─── Signature Scanner ──────────────────────────────── */
 .scanner-viewport {
   height: 240px !important;
