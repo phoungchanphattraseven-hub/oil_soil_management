@@ -794,6 +794,7 @@ export default function App() {
     } else if (!result.success) {
       console.error('Failed to save fuel log:', result.error);
     }
+    return result;
   };
 
   // Handler: Delete a fuel log and restore stock in real time
@@ -943,6 +944,7 @@ export default function App() {
     } else if (!result.success) {
       console.error('Failed to save soil log:', result.error);
     }
+    return result;
   };
 
   // Handler: Delete a soil log

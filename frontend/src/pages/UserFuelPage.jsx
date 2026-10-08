@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Fuel, CheckCircle2, MapPin, Calendar, Clock, Droplets, ChevronDown, ChevronUp, User, Pencil, Trash2, X, Check } from 'lucide-react';
+import { Fuel, CheckCircle2, MapPin, Calendar, Clock, Droplets, ChevronDown, ChevronUp, User, Pencil, Trash2, X, Check, FileCheck, Image as ImageIcon } from 'lucide-react';
 import StaffSelector from '../components/Common/StaffSelector';
 import ImageUploader from '../components/Common/ImageUploader';
+import { playSuccessSound } from '../utils/notifications';
 
 function getNowLocal() {
   const now = new Date();
@@ -50,7 +51,11 @@ export default function UserFuelPage({
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   const selectedStaff = staff.find(s => s.id === selectedStaffId) || null;
-  const todayLogs = fuelLogs.filter(l => (l.log_date || '').substring(0, 10) === todayStr);
+  const reportLogs = fuelLogs.filter(l => (l.log_date || l.time_in || '').substring(0, 10) === logDate);
+  const reportFuelOut = reportLogs.reduce((sum, log) => sum + (parseFloat(log.refill_liters) || 0), 0);
+  const reportFuelIn = reportLogs.reduce((sum, log) => sum + (parseFloat(log.oil_in) || 0), 0);
+  const signedReports = reportLogs.filter(log => log.signature_url).length;
+  const photoReports = reportLogs.filter(log => log.photo_url).length;
   const locked = !!assignedStation?.id;
 
   const handleSelectStaff = (member) => {
@@ -100,19 +105,22 @@ export default function UserFuelPage({
     setPendingSave(buildLogPayload());
   };
 
-  const confirmSave = () => {
+  const confirmSave = async () => {
     if (!pendingSave) return;
     const wasEdit = !!editingLog;
+    let result;
     if (wasEdit && onEditFuelLog) {
-      onEditFuelLog(pendingSave);
+      result = await onEditFuelLog(pendingSave);
     } else if (onAddFuelLog) {
-      onAddFuelLog(pendingSave);
+      result = await onAddFuelLog(pendingSave);
     }
     setPendingSave(null);
     resetForm();
-    setSuccessKind(wasEdit ? 'updated' : 'saved');
+    if (result && !result.success && !result.queued) return;
+    setSuccessKind(result?.queued ? 'queued' : result?.success ? 'sent' : wasEdit ? 'updated' : 'saved');
+    playSuccessSound();
     setSuccess(true);
-    setTimeout(() => setSuccess(false), 2500);
+    setTimeout(() => setSuccess(false), 3000);
   };
 
   const startEdit = (log) => {
@@ -153,32 +161,36 @@ export default function UserFuelPage({
                 ? (isKm ? 'កែប្រែកត់ត្រាប្រេង' : 'Edit Fuel Log')
                 : (isKm ? 'កត់ត្រាប្រេងឥន្ធនៈ' : 'Fuel Log Entry')}
             </h1>
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>
-              {isKm ? `ថ្ងៃនេះ ${todayLogs.length} ករណី` : `${todayLogs.length} entries today`}
+            <p style={{ fontSize: '0.7rem', lineHeight: 1.6, paddingTop: '2px', color: 'var(--text-muted)', margin: 0 }}>
+              {isKm ? `${reportLogs.length} ករណី សម្រាប់កាលបរិច្ឆេទដែលបានជ្រើស` : `${reportLogs.length} entries for the selected date`}
             </p>
           </div>
         </div>
       </div>
 
-      {/* ── Success banner ──────────────────────────── */}
-      {isSuccess && (
-        <div style={{
-          margin: '12px 16px 0',
-          padding: '12px 14px',
-          background: 'var(--success-subtle)',
-          border: '1px solid var(--success-border)',
-          borderRadius: 'var(--r-md)',
-          display: 'flex', alignItems: 'center', gap: '8px',
-          animation: 'fadeIn 0.25s ease'
-        }}>
-          <CheckCircle2 size={16} color="var(--success)" />
-          <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--success)' }}>
-            {successKind === 'updated'
-              ? (isKm ? 'កែប្រែបានជោគជ័យ!' : 'Entry updated successfully!')
-              : (isKm ? 'កត់ត្រាបានជោគជ័យ!' : 'Entry saved successfully!')}
-          </span>
+      {/* ── Selected-date report snapshot ───────────── */}
+      <section className="user-report-summary" style={{ margin: '22px 16px 0', padding: '13px', background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--r-md)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 800 }}>
+            <FileCheck size={15} color="var(--fuel-accent)" />
+            {isKm ? 'សង្ខេបរបាយការណ៍ប្រចាំថ្ងៃ' : 'Daily Report Summary'}
+          </div>
+          <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600 }}>{logDate}</span>
         </div>
-      )}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '8px' }}>
+          {[
+            { label: isKm ? 'ប្រេងចេញ' : 'Fuel Out', value: `${reportFuelOut.toLocaleString()} L`, color: 'var(--fuel-accent)' },
+            { label: isKm ? 'ប្រេងចូល' : 'Fuel In', value: `${reportFuelIn.toLocaleString()} L`, color: 'var(--success)' },
+            { label: isKm ? 'ហត្ថលេខា' : 'Signed', value: `${signedReports}/${reportLogs.length}`, color: 'var(--primary)' },
+            { label: isKm ? 'រូបថតភ្ជាប់' : 'Photo Evidence', value: `${photoReports}/${reportLogs.length}`, color: 'var(--text-sub)' },
+          ].map(metric => (
+            <div key={metric.label} style={{ padding: '8px 10px', background: 'var(--surface-subtle)', borderRadius: 'var(--r-xs)' }}>
+              <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>{metric.label}</div>
+              <div style={{ marginTop: '2px', fontSize: '0.9rem', fontWeight: 800, color: metric.color }}>{metric.value}</div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* ── Form card ───────────────────────────────── */}
       <form onSubmit={handleSubmit} style={{ padding: '12px 16px 0' }}>
@@ -369,15 +381,15 @@ export default function UserFuelPage({
         </div>
       </form>
 
-      {/* ── Today's logs ───────────────────────────── */}
-      {todayLogs.length > 0 && (
+      {/* ── Selected-date logs ─────────────────────── */}
+      {reportLogs.length > 0 && (
         <div style={{ padding: '20px 16px 0' }}>
           <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-sub)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <CheckCircle2 size={13} color="var(--success)" />
-            {isKm ? `ករណីថ្ងៃនេះ (${todayLogs.length})` : `Today's entries (${todayLogs.length})`}
+            {isKm ? `បញ្ជីរបាយការណ៍ (${reportLogs.length})` : `Report entries (${reportLogs.length})`}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {todayLogs.slice().reverse().map(log => (
+            {reportLogs.slice().reverse().map(log => (
               <div key={log.id} style={{
                 display: 'flex', alignItems: 'center', gap: '10px',
                 padding: '10px 12px', borderRadius: 'var(--r-md)',
@@ -398,6 +410,12 @@ export default function UserFuelPage({
                 <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--fuel-accent)', flexShrink: 0 }}>
                   {parseFloat(log.refill_liters || 0)}L
                 </div>
+                {(log.signature_url || log.photo_url) && (
+                  <span title={isKm ? 'ភស្តុតាងភ្ជាប់' : 'Evidence attached'} style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--success)', fontSize: '0.7rem', fontWeight: 700 }}>
+                    {log.signature_url && <FileCheck size={13} />}
+                    {log.photo_url && <ImageIcon size={13} />}
+                  </span>
+                )}
                 {deleteConfirmId === log.id ? (
                   <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
                     <button
@@ -515,8 +533,32 @@ export default function UserFuelPage({
         </div>
       )}
 
+      {isSuccess && (
+        <div className="modal-overlay" style={{ zIndex: 1200 }} onClick={() => setSuccess(false)}>
+          <div className="card modal-box" style={{ width: 'min(360px, calc(100% - 32px))', textAlign: 'center', padding: '28px 22px' }} role="alertdialog" aria-modal="true">
+            <div style={{ width: '52px', height: '52px', margin: '0 auto 14px', borderRadius: '50%', background: 'var(--success-subtle)', color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CheckCircle2 size={28} />
+            </div>
+            <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-main)' }}>
+              {successKind === 'sent'
+                ? (isKm ? 'បានផ្ញើរបាយការណ៍ជោគជ័យ!' : 'Report sent successfully!')
+                : successKind === 'queued'
+                  ? (isKm ? 'បានរក្សាទុករបាយការណ៍រួចហើយ' : 'Report saved and queued for sync')
+                  : successKind === 'updated'
+                    ? (isKm ? 'កែប្រែរបាយការណ៍ជោគជ័យ!' : 'Report updated successfully!')
+                    : (isKm ? 'បានរក្សាទុករបាយការណ៍ជោគជ័យ!' : 'Report saved successfully!')}
+            </h3>
+            <p style={{ margin: '7px 0 18px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              {isKm ? 'ព័ត៌មានរបស់អ្នកត្រូវបានកត់ត្រារួចរាល់។' : 'Your report has been recorded.'}
+            </p>
+            <button type="button" className="btn btn-primary" onClick={() => setSuccess(false)}>{isKm ? 'យល់ព្រម' : 'Done'}</button>
+          </div>
+        </div>
+      )}
+
       <style>{`
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+        .user-report-summary { position: relative; clear: both; isolation: isolate; }
       `}</style>
     </div>
   );

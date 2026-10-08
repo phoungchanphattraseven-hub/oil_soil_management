@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { HardHat, Plus, CheckCircle2, MapPin, Calendar, ChevronDown, ChevronUp, Truck, Box } from 'lucide-react';
 import AbbrCodeSelector from '../components/Common/AbbrCodeSelector';
 import ImageUploader from '../components/Common/ImageUploader';
+import { playSuccessSound } from '../utils/notifications';
 
 export default function UserSoilPage({
   soilLogs = [], abbrCodes = [], onAddAbbrCode,
@@ -32,12 +33,15 @@ export default function UserSoilPage({
 
   const locked = !!assignedStation?.name;
   const totalVol = (parseFloat(tripCount) || 0) * (parseFloat(m3PerTrip) || 0);
-  const todayLogs = soilLogs.filter(l => (l.log_date || '').substring(0, 10) === todayStr);
+  const reportLogs = soilLogs.filter(l => (l.log_date || '').substring(0, 10) === logDate);
+  const reportTrips = reportLogs.reduce((sum, log) => sum + (parseInt(log.trip_count, 10) || 0), 0);
+  const reportVolume = reportLogs.reduce((sum, log) => sum + (parseFloat(log.total_cubic_meters) || 0), 0);
+  const receiptCount = reportLogs.filter(log => log.receipt_photo_url).length;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!stationName || !tripCount || !m3PerTrip) return;
-    onAddSoilLog({
+    const result = await onAddSoilLog({
       id: `slog-${Date.now()}`,
       station_name: stationName,
       code_abbr: codeAbbr || 'SL-001',
@@ -55,8 +59,11 @@ export default function UserSoilPage({
       created_at: new Date().toISOString()
     });
     setTrips(''); setM3(''); setScrap(''); setDecisions(''); setIssues(''); setPhoto(''); setCode('');
-    setSuccess(true);
-    setTimeout(() => setSuccess(false), 2500);
+    if (!result || result.success || result.queued) {
+      playSuccessSound();
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 2500);
+    }
   };
 
   return (
@@ -77,30 +84,36 @@ export default function UserSoilPage({
             <h1 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
               {isKm ? 'កត់ត្រាការចាក់ដី' : 'Soil Log Entry'}
             </h1>
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>
-              {isKm ? `ថ្ងៃនេះ ${todayLogs.length} ករណី` : `${todayLogs.length} entries today`}
+            <p style={{ fontSize: '0.7rem', lineHeight: 1.6, paddingTop: '2px', color: 'var(--text-muted)', margin: 0 }}>
+              {isKm ? `${reportLogs.length} ករណី សម្រាប់កាលបរិច្ឆេទដែលបានជ្រើស` : `${reportLogs.length} entries for the selected date`}
             </p>
           </div>
         </div>
       </div>
 
-      {/* ── Success ──────────────────────────────────── */}
-      {isSuccess && (
-        <div style={{
-          margin: '12px 16px 0',
-          padding: '12px 14px',
-          background: 'var(--success-subtle)',
-          border: '1px solid var(--success-border)',
-          borderRadius: 'var(--r-md)',
-          display: 'flex', alignItems: 'center', gap: '8px',
-          animation: 'fadeIn 0.25s ease'
-        }}>
-          <CheckCircle2 size={16} color="var(--success)" />
-          <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--success)' }}>
-            {isKm ? 'កត់ត្រាបានជោគជ័យ!' : 'Entry saved successfully!'}
-          </span>
+      {/* ── Selected-date report snapshot ───────────── */}
+      <section className="user-report-summary" style={{ margin: '22px 16px 0', padding: '13px', background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--r-md)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-main)', fontSize: '0.78rem', fontWeight: 800 }}>
+            <Box size={15} color="var(--soil-accent)" />
+            {isKm ? 'សង្ខេបរបាយការណ៍ប្រចាំថ្ងៃ' : 'Daily Report Summary'}
+          </div>
+          <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600 }}>{logDate}</span>
         </div>
-      )}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '8px' }}>
+          {[
+            { label: isKm ? 'ចំនួនករណី' : 'Entries', value: reportLogs.length, color: 'var(--soil-accent)' },
+            { label: isKm ? 'ចំនួនដំណើរ' : 'Trips', value: reportTrips, color: 'var(--text-main)' },
+            { label: isKm ? 'មាឌសរុប' : 'Total Volume', value: `${reportVolume.toFixed(1)} m³`, color: 'var(--soil-accent)' },
+            { label: isKm ? 'រូបថតបង្កាន់ដៃ' : 'Receipt Evidence', value: `${receiptCount}/${reportLogs.length}`, color: 'var(--text-sub)' },
+          ].map(metric => (
+            <div key={metric.label} style={{ padding: '8px 10px', background: 'var(--surface-subtle)', borderRadius: 'var(--r-xs)' }}>
+              <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>{metric.label}</div>
+              <div style={{ marginTop: '2px', fontSize: '0.9rem', fontWeight: 800, color: metric.color }}>{metric.value}</div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* ── Form ────────────────────────────────────── */}
       <form onSubmit={handleSubmit} style={{ padding: '12px 16px 0' }}>
@@ -257,15 +270,15 @@ export default function UserSoilPage({
         </button>
       </form>
 
-      {/* ── Today's logs ───────────────────────────── */}
-      {todayLogs.length > 0 && (
+      {/* ── Selected-date logs ─────────────────────── */}
+      {reportLogs.length > 0 && (
         <div style={{ padding: '20px 16px 0' }}>
           <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-sub)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <CheckCircle2 size={13} color="var(--success)" />
-            {isKm ? `ករណីថ្ងៃនេះ (${todayLogs.length})` : `Today's entries (${todayLogs.length})`}
+            {isKm ? `បញ្ជីរបាយការណ៍ (${reportLogs.length})` : `Report entries (${reportLogs.length})`}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {todayLogs.slice().reverse().map(log => (
+            {reportLogs.slice().reverse().map(log => (
               <div key={log.id} style={{
                 display: 'flex', alignItems: 'center', gap: '12px',
                 padding: '10px 12px', borderRadius: 'var(--r-md)',
@@ -291,8 +304,26 @@ export default function UserSoilPage({
         </div>
       )}
 
+      {isSuccess && (
+        <div className="modal-overlay" style={{ zIndex: 1200 }} onClick={() => setSuccess(false)}>
+          <div className="card modal-box" style={{ width: 'min(360px, calc(100% - 32px))', textAlign: 'center', padding: '28px 22px' }} role="alertdialog" aria-modal="true">
+            <div style={{ width: '52px', height: '52px', margin: '0 auto 14px', borderRadius: '50%', background: 'var(--success-subtle)', color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CheckCircle2 size={28} />
+            </div>
+            <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-main)' }}>
+              {isKm ? 'បានផ្ញើរបាយការណ៍ជោគជ័យ!' : 'Report sent successfully!'}
+            </h3>
+            <p style={{ margin: '7px 0 18px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              {isKm ? 'ព័ត៌មានរបស់អ្នកត្រូវបានកត់ត្រារួចរាល់។' : 'Your report has been recorded.'}
+            </p>
+            <button type="button" className="btn btn-primary" onClick={() => setSuccess(false)}>{isKm ? 'យល់ព្រម' : 'Done'}</button>
+          </div>
+        </div>
+      )}
+
       <style>{`
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+        .user-report-summary { position: relative; clear: both; isolation: isolate; }
       `}</style>
     </div>
   );
