@@ -367,6 +367,7 @@ export default function FuelLogForm({
               label={isKm ? 'ហត្ថលេខា (Signature — auto from staff or upload manually)' : 'Signature (auto-loaded from staff or upload)'}
               hint={isKm ? 'ហត្ថលេខាត្រូវបានផ្ទុករួចហើយ ប្រសិនបើបុគ្គលិកមានហត្ថលេខា' : 'Auto-filled if selected staff has a signature on file'}
               compact
+              removeBackground
             />
           </div>
 

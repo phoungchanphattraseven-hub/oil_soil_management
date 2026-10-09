@@ -501,6 +501,16 @@ export default function App() {
           const normalized = data.staff.map(s => ({ ...s, working_at: s.station_name || s.working_at || '' }));
           setStaff(normalized);
         }
+        if (data.archives && Array.isArray(data.archives) && data.archives.length > 0) {
+          const normalizedArchives = data.archives.map(a => ({
+            id: a.id || a.archive_ref,
+            date: a.archive_date || a.date,
+            saved_at: a.saved_at || '',
+            total_liters: parseFloat(a.total_liters) || 0,
+            logs: Array.isArray(a.logs) ? a.logs : []
+          }));
+          setSavedArchives(normalizedArchives);
+        }
 
         setIsOnline(true);
         // Flush any offline queue items that accumulated while offline
@@ -897,6 +907,50 @@ export default function App() {
       .catch(e => console.log('Backend edit sync offline, updated locally.'));
   };
 
+  // Handler: Save fuel table archive to backend / Supabase
+  const handleSaveArchive = async (newArchive) => {
+    setSavedArchives(prev => [newArchive, ...prev]);
+
+    const apiPayload = {
+      archive_ref: newArchive.id,
+      date: newArchive.date,
+      saved_at: newArchive.saved_at,
+      total_liters: newArchive.total_liters,
+      logs: newArchive.logs
+    };
+
+    const result = await makeApiCall(
+      'save_archive',
+      `${API_BASE_URL}/fuel/archives`,
+      'POST',
+      apiPayload,
+      (resData) => {
+        if (resData.data && resData.data[0]) {
+          const saved = resData.data[0];
+          const normalized = {
+            id: saved.id || newArchive.id,
+            date: saved.archive_date || newArchive.date,
+            saved_at: saved.saved_at || newArchive.saved_at,
+            total_liters: parseFloat(saved.total_liters) || newArchive.total_liters,
+            logs: saved.logs || newArchive.logs
+          };
+          setSavedArchives(prev => prev.map(a => a.id === newArchive.id ? normalized : a));
+        }
+      }
+    );
+    return result;
+  };
+
+  const handleDeleteArchive = async (archId) => {
+    setSavedArchives(prev => prev.filter(a => a.id !== archId));
+    await makeApiCall(
+      'delete_archive',
+      `${API_BASE_URL}/fuel/archives/${archId}`,
+      'DELETE',
+      null
+    );
+  };
+
   // Handler: Clear active fuel logs (archives live table and clears backend)
   const handleClearFuelLogs = () => {
     setFuelLogs([]);
@@ -1069,6 +1123,8 @@ export default function App() {
                   onClearFuelLogs={handleClearFuelLogs}
                   savedArchives={savedArchives}
                   setSavedArchives={setSavedArchives}
+                  onSaveArchive={handleSaveArchive}
+                  onDeleteArchive={handleDeleteArchive}
                   lang={lang}
                   userRole={userRole}
                   assignedStation={userAssignedStation}

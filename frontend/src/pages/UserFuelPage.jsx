@@ -342,7 +342,7 @@ export default function UserFuelPage({
             <ImageUploader value={photoUrl} onChange={setPhoto}
               label={isKm ? 'រូបថត' : 'Photo'} compact />
             <ImageUploader value={signatureUrl} onChange={setSig}
-              label={isKm ? 'ហត្ថលេខា' : 'Signature'} compact />
+              label={isKm ? 'ហត្ថលេខា' : 'Signature'} compact removeBackground />
           </div>
         )}
 

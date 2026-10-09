@@ -4,7 +4,7 @@ import { Camera, CheckCircle2, RefreshCw, X, User, Car, ShieldCheck, Sparkles, U
 // Extract dark ink from uneven paper/camera lighting. Unlike one global cutoff,
 // this compares each pixel with its surrounding area and removes small specks
 // plus shadows connected to the crop edges.
-function cleanSignatureImage(ctx, width, height) {
+function cleanSignatureImage(ctx, width, height, transparent = false) {
   const image = ctx.getImageData(0, 0, width, height);
   const total = width * height;
   const gray = new Uint8Array(total);
@@ -80,10 +80,14 @@ function cleanSignatureImage(ctx, width, height) {
     const pixel = i * 4;
     if (keep[i]) {
       image.data[pixel] = 15; image.data[pixel + 1] = 23; image.data[pixel + 2] = 42;
+      image.data[pixel + 3] = 255;
+    } else if (transparent) {
+      image.data[pixel] = 0; image.data[pixel + 1] = 0; image.data[pixel + 2] = 0;
+      image.data[pixel + 3] = 0;
     } else {
       image.data[pixel] = 255; image.data[pixel + 1] = 255; image.data[pixel + 2] = 255;
+      image.data[pixel + 3] = 255;
     }
-    image.data[pixel + 3] = 255;
   }
   ctx.putImageData(image, 0, 0);
 }
@@ -248,16 +252,27 @@ export default function SignatureScannerModal({
     }, 600);
   };
 
-  // Handle File Upload Fallback
+  // Handle File Upload Fallback — auto-removes background for transparent PNG
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (evt) => {
-      setScannedImage(evt.target.result);
-      setScanSuccess(true);
-      playSuccessSound();
-      stopCamera();
+      const img = new Image();
+      img.onload = () => {
+        const offscreen = document.createElement('canvas');
+        offscreen.width = img.width;
+        offscreen.height = img.height;
+        const offCtx = offscreen.getContext('2d');
+        offCtx.drawImage(img, 0, 0);
+        cleanSignatureImage(offCtx, img.width, img.height, true);
+        const transparentDataUrl = offscreen.toDataURL('image/png');
+        setScannedImage(transparentDataUrl);
+        setScanSuccess(true);
+        playSuccessSound();
+        stopCamera();
+      };
+      img.src = evt.target.result;
     };
     reader.readAsDataURL(file);
   };

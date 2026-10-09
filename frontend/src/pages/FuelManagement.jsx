@@ -43,6 +43,8 @@ export default function FuelManagement({
   onClearFuelLogs,
   savedArchives,
   setSavedArchives,
+  onSaveArchive,
+  onDeleteArchive,
   lang = 'km',
   userRole = 'user',
   assignedStation = { id: '', name: '' }
@@ -345,6 +347,8 @@ export default function FuelManagement({
             initialViewMode="LIVE"
             savedArchives={savedArchives}
             setSavedArchives={setSavedArchives}
+            onSaveArchive={onSaveArchive}
+            onDeleteArchive={onDeleteArchive}
             userRole={userRole}
           />
         </div>
@@ -479,6 +483,8 @@ export default function FuelManagement({
             initialViewMode="ARCHIVE"
             savedArchives={savedArchives}
             setSavedArchives={setSavedArchives}
+            onSaveArchive={onSaveArchive}
+            onDeleteArchive={onDeleteArchive}
             userRole={userRole}
           />
         </div>

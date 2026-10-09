@@ -109,6 +109,15 @@ class SoilLogInput(BaseModel):
     time_end: str
     log_date: Optional[str] = None
 
+class FuelArchiveInput(BaseModel):
+    id: Optional[str] = None
+    archive_ref: Optional[str] = None
+    date: Optional[str] = None
+    saved_at: Optional[str] = None
+    total_liters: float = 0.0
+    logs: list = []
+
+
 class UserInput(BaseModel):
     name: str
     email: str
@@ -305,22 +314,81 @@ def get_current_user():
 def get_dashboard_summary(response: Response):
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     if not supabase:
-        return {"stations": [], "fuel_logs": [], "soil_logs": [], "staff": [], "message": "Supabase client not initialized"}
+        return {"stations": [], "fuel_logs": [], "soil_logs": [], "staff": [], "archives": [], "message": "Supabase client not initialized"}
 
     try:
         fuel_stations = supabase.table("fuel_stations").select("*").execute()
         soil_data = supabase.table("soil_logs").select("*").execute()
         fuel_logs_data = supabase.table("fuel_logs").select("*").execute()
         staff_data = supabase.table("staff").select("*").execute()
+        archives_data = []
+        try:
+            res_arch = supabase.table("fuel_archives").select("*").order("created_at", desc=True).execute()
+            archives_data = res_arch.data or []
+        except Exception as arch_err:
+            print("Note querying fuel_archives:", str(arch_err))
+
         return {
             "stations": fuel_stations.data or [],
             "soil_logs": soil_data.data or [],
             "fuel_logs": fuel_logs_data.data or [],
-            "staff": staff_data.data or []
+            "staff": staff_data.data or [],
+            "archives": archives_data
         }
     except Exception as err:
         print("Error in /api/dashboard/summary:", str(err))
-        return {"stations": [], "soil_logs": [], "fuel_logs": [], "staff": [], "error": str(err)}
+        return {"stations": [], "soil_logs": [], "fuel_logs": [], "staff": [], "archives": [], "error": str(err)}
+
+@app.get("/api/fuel/archives")
+def get_fuel_archives():
+    if not supabase:
+        return {"status": "demo", "data": []}
+    try:
+        res = supabase.table("fuel_archives").select("*").order("created_at", desc=True).execute()
+        return {"status": "success", "data": res.data or []}
+    except Exception as err:
+        print("Error fetching fuel archives:", str(err))
+        return {"status": "error", "error": str(err), "data": []}
+
+@app.post("/api/fuel/archives")
+def save_fuel_archive(data: FuelArchiveInput):
+    if not supabase:
+        return {"status": "demo", "data": data.dict()}
+
+    try:
+        archive_payload = {
+            "archive_ref": data.archive_ref or f"ARCH-{data.date or 'DATE'}",
+            "archive_date": data.date or "2026-10-09",
+            "saved_at": data.saved_at or "",
+            "total_liters": data.total_liters,
+            "logs": data.logs
+        }
+        if data.id and is_valid_uuid(data.id):
+            archive_payload["id"] = data.id
+
+        res = supabase.table("fuel_archives").insert(archive_payload).execute()
+        print("Fuel Archive saved to Supabase successfully!")
+        return {"status": "success", "data": res.data}
+    except Exception as err:
+        print("Error saving fuel archive:", str(err))
+        raise HTTPException(status_code=500, detail=str(err))
+
+@app.delete("/api/fuel/archives/{archive_id}")
+def delete_fuel_archive(archive_id: str):
+    if not supabase:
+        return {"status": "demo", "message": f"Archive {archive_id} deleted (demo mode)"}
+    try:
+        if is_valid_uuid(archive_id):
+            res = supabase.table("fuel_archives").delete().eq("id", archive_id).execute()
+            return {"status": "success", "data": res.data}
+        else:
+            # Fallback for non-uuid local archive IDs (e.g. arch-123456)
+            res = supabase.table("fuel_archives").delete().eq("archive_ref", archive_id).execute()
+            return {"status": "success", "data": res.data}
+    except Exception as err:
+        print("Error deleting fuel archive:", str(err))
+        raise HTTPException(status_code=500, detail=str(err))
+
 
 @app.post("/api/fuel/station")
 def create_fuel_station(data: StationInput):

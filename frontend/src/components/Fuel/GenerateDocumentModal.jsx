@@ -92,20 +92,22 @@ const PRINT_CSS = `
     padding: 8px 14px;
     display: grid;
     grid-template-columns: 1.15fr 0.85fr;
-    gap: 6px 24px;
-    font-size: 8.8pt;
+    gap: 5px 18px;
+    font-size: 8.5pt;
   }
   .meta-item {
     display: flex;
     align-items: baseline;
-    gap: 8px;
-    line-height: 1.4;
+    gap: 6px;
+    line-height: 1.35;
   }
   .meta-label {
     font-weight: 500;
     color: #64748b;
     white-space: nowrap;
-    min-width: 95px;
+    min-width: 85px;
+    font-size: 8pt;
+    flex-shrink: 0;
   }
   .meta-val {
     font-weight: 700;
@@ -113,26 +115,31 @@ const PRINT_CSS = `
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
+    word-break: break-word;
+    font-size: 8.5pt;
   }
 
   /* Table */
   .log-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 8.8pt;
+    font-size: 8pt;
     page-break-inside: avoid;
     break-inside: avoid;
+    table-layout: fixed;
   }
   .log-table th {
     background: #f1f5f9;
     color: #334155;
     border: 1px solid #cbd5e1;
-    padding: 6px 8px;
+    padding: 5px 6px;
     font-weight: 700;
     text-align: center;
-    font-size: 8.5pt;
-    letter-spacing: 0.2px;
-    white-space: nowrap;
+    font-size: 7.8pt;
+    letter-spacing: 0.1px;
+    white-space: normal;
+    word-break: keep-all;
+    overflow: hidden;
   }
   .log-table th.th-desc {
     text-align: left;
@@ -144,9 +151,12 @@ const PRINT_CSS = `
   }
   .log-table td {
     border: 1px solid #e2e8f0;
-    padding: 6px 8px;
+    padding: 5px 6px;
     vertical-align: middle;
     color: #1e293b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 8pt;
   }
   .log-table tbody tr:nth-child(even) {
     background: #f8fafc;
@@ -158,17 +168,22 @@ const PRINT_CSS = `
   }
   .log-table .desc {
     text-align: left;
-    padding-left: 10px;
+    padding-left: 8px;
     font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .log-table .plate {
     text-align: center;
     font-weight: 700;
     font-family: inherit;
     color: #0f172a;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.2px;
     white-space: nowrap;
     word-break: keep-all;
+    font-size: 7.8pt;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .log-table .driver {
     text-align: center;
@@ -183,15 +198,17 @@ const PRINT_CSS = `
   }
   .log-table .shift-badge {
     text-align: center;
-    font-size: 8.5pt;
+    font-size: 7.8pt;
     font-weight: 600;
+    white-space: nowrap;
   }
   .log-table .vol {
     text-align: right;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     color: #0f172a;
-    padding-right: 12px;
+    padding-right: 8px;
+    white-space: nowrap;
   }
   .log-table tfoot td {
     font-weight: 700;
@@ -380,6 +397,16 @@ function formatTime12h(timeStr) {
   return `${hours}:${minutes} ${ampm}`;
 }
 
+function getLogDate(log) {
+  if (!log) return '';
+  if (log.log_date) return String(log.log_date).substring(0, 10);
+  if (log.date) return String(log.date).substring(0, 10);
+  if (log.time_in && log.time_in.includes('T')) return log.time_in.substring(0, 10);
+  if (log.time_in && /^\d{4}-\d{2}-\d{2}/.test(log.time_in)) return log.time_in.substring(0, 10);
+  if (log.created_at && log.created_at.includes('T')) return log.created_at.substring(0, 10);
+  return '';
+}
+
 /* ─── Document Content (shared between screen + print) ────────────── */
 function DocumentContent({ meta, logs, stations = [], lang }) {
   const isKm = lang === 'km';
@@ -473,15 +500,15 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
         <table className="log-table">
           <thead>
             <tr>
-              <th style={{ width: '32px' }}>#</th>
-              <th className="th-desc">{isKm ? 'ការពិពណ៌នា' : 'Description'}</th>
-              <th style={{ width: '105px', whiteSpace: 'nowrap' }}>{isKm ? 'ផ្លាកលេខ' : 'License Plate'}</th>
-              <th style={{ width: '100px' }}>{isKm ? 'អ្នកបើកបរ' : 'Driver / Staff'}</th>
-              <th style={{ width: '75px', whiteSpace: 'nowrap' }}>{isKm ? 'ម៉ោង' : 'Time'}</th>
-              <th style={{ width: '55px' }}>{isKm ? 'វេន' : 'Shift'}</th>
-              <th className="th-vol" style={{ width: '80px' }}>{isKm ? 'ប្រេងប្រើ (Out L)' : 'Fuel Out (L)'}</th>
-              <th className="th-vol" style={{ width: '85px', color: '#15803d' }}>{isKm ? 'ប្រេងចូល (In L)' : 'Oil In (L)'}</th>
-              <th style={{ width: '75px', textAlign: 'center' }}>{isKm ? 'ហត្ថលេខា' : 'Signature'}</th>
+              <th style={{ width: '4%' }}>#</th>
+              <th className="th-desc" style={{ width: '17%' }}>{isKm ? 'ការពិពណ៌នា' : 'Description'}</th>
+              <th style={{ width: '13%' }}>{isKm ? 'ផ្លាកលេខ' : 'License Plate'}</th>
+              <th style={{ width: '12%' }}>{isKm ? 'អ្នកបើកបរ' : 'Driver / Staff'}</th>
+              <th style={{ width: '10%' }}>{isKm ? 'ម៉ោង' : 'Time'}</th>
+              <th style={{ width: '10%', whiteSpace: 'nowrap' }}>{isKm ? 'វេន' : 'Shift'}</th>
+              <th className="th-vol" style={{ width: '12.5%' }}>{isKm ? 'ប្រេងប្រើ (Out L)' : 'Fuel Out (L)'}</th>
+              <th className="th-vol" style={{ width: '12.5%', color: '#15803d' }}>{isKm ? 'ប្រេងចូល (In L)' : 'Oil In (L)'}</th>
+              <th style={{ width: '9%', textAlign: 'center' }}>{isKm ? 'ហត្ថលេខា' : 'Signature'}</th>
             </tr>
           </thead>
           <tbody>
@@ -493,11 +520,8 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
               </tr>
             ) : (() => {
               // Separate Oil In entries from regular fuel-out entries
-              const oilInEntries = logs.filter(l => (parseFloat(l.oil_in) || 0) > 0);
-              const fuelOutEntries = logs.filter(l => (parseFloat(l.oil_in) || 0) === 0 || (parseFloat(l.refill_liters) || 0) > 0);
-              // For rows that have both oil_in AND refill_liters, show in oil_in section only
-              const pureOilIn = logs.filter(l => (parseFloat(l.oil_in) || 0) > 0 && (parseFloat(l.refill_liters) || 0) === 0);
-              const mixedOrOut = logs.filter(l => (parseFloat(l.refill_liters) || 0) > 0);
+              const oilInEntries = logs.filter(l => (parseFloat(l.oil_in) || 0) > 0 && (parseFloat(l.refill_liters) || 0) === 0);
+              const fuelOutEntries = logs.filter(l => (parseFloat(l.refill_liters) || 0) > 0 || (parseFloat(l.oil_in) || 0) === 0);
 
               return (
                 <>
@@ -584,7 +608,7 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
                   )}
 
                   {/* ── FUEL OUT BLOCK: vehicle refueling entries ── */}
-                  {mixedOrOut.length > 0 && (
+                  {fuelOutEntries.length > 0 && (
                     <>
                       {/* Section label row (only if there were also oil_in entries above) */}
                       {oilInEntries.length > 0 && (
@@ -604,7 +628,7 @@ function DocumentContent({ meta, logs, stations = [], lang }) {
                           </td>
                         </tr>
                       )}
-                      {mixedOrOut.map((log, i) => {
+                      {fuelOutEntries.map((log, i) => {
                         const rowOut = parseFloat(log.refill_liters || 0);
                         const rowIn = parseFloat(log.oil_in || 0);
                         const currentShift = normalizeShift(log.shift);
@@ -778,10 +802,24 @@ export default function GenerateDocumentModal({ open, onClose, logs = [], statio
 
   const up = (field, val) => setMeta(m => ({ ...m, [field]: val }));
 
+  // Sync meta.date to match incoming logs date automatically
+  React.useEffect(() => {
+    if (open && logs && logs.length > 0) {
+      const firstDate = getLogDate(logs[0]);
+      if (firstDate && firstDate !== meta.date) {
+        setMeta(m => ({
+          ...m,
+          date: firstDate,
+          ref: `FR-${firstDate.replace(/-/g, '')}-001`
+        }));
+      }
+    }
+  }, [open, logs]);
+
   // Filter logs to print based on date+shift
   const filteredLogs = logs.filter(log => {
-    const logDate = log.time_in?.substring(0, 10) || '';
-    const matchDate  = !meta.date || logDate === meta.date;
+    const logDate = getLogDate(log);
+    const matchDate  = !meta.date || !logDate || logDate === meta.date;
     const matchShift = meta.shift === 'ALL' || (log.shift || 'Morning') === meta.shift;
     return matchDate && matchShift;
   });
@@ -837,7 +875,7 @@ ${previewRef.current?.innerHTML || ''}
 
   return (
     <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="modal-box" style={{ maxWidth: previewOpen ? '900px' : '620px', maxHeight: '92vh', transition: 'max-width 0.3s ease' }}>
+      <div className="modal-box" style={{ maxWidth: previewOpen ? '1200px' : '620px', width: previewOpen ? '95vw' : '100%', maxHeight: '92vh', transition: 'max-width 0.3s ease, width 0.3s ease' }}>
         {/* Header */}
         <div className="modal-header">
           <div className="modal-title-group">
@@ -1002,23 +1040,35 @@ ${previewRef.current?.innerHTML || ''}
               </div>
 
               {/* A4 Preview Sheet */}
-              <div style={{ padding: '24px 20px' }}>
+              <div style={{ padding: '24px 20px', display: 'flex', justifyContent: 'center' }}>
                 <div
                   ref={previewRef}
                   style={{
                     background: '#fff',
                     boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
-                    padding: '28px 32px',
-                    margin: '0 auto',
-                    maxWidth: '680px',
+                    padding: '32px 36px',
+                    width: '210mm',
+                    minWidth: '680px',
+                    maxWidth: '820px',
                     fontFamily: "'Kantumruy Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                    fontSize: '11px',
+                    fontSize: '9.5pt',
                     color: '#1e293b',
-                    lineHeight: '1.4'
+                    lineHeight: '1.4',
+                    transformOrigin: 'top center'
                   }}
                 >
                   {/* Inline styles for preview */}
-                  <style>{PRINT_CSS}</style>
+                  <style>{`
+                    ${PRINT_CSS}
+                    /* Preview-specific overrides for clean rendering */
+                    .doc-root { min-height: auto; }
+                    .log-table { table-layout: fixed; width: 100%; }
+                    .log-table th, .log-table td { word-break: break-word; overflow-wrap: break-word; }
+                    .meta-card { gap: 5px 14px; }
+                    .summary-table th { font-size: 7.2pt; white-space: normal; word-break: keep-all; }
+                    .summary-table td { font-size: 9pt; }
+                    .tank-table th { font-size: 7pt; white-space: normal; }
+                  `}</style>
                   <DocumentContent meta={meta} logs={filteredLogs} stations={stations} lang={lang} />
                 </div>
               </div>

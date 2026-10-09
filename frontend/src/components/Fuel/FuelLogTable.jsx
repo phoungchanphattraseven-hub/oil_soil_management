@@ -64,6 +64,8 @@ export default function FuelLogTable({
   initialViewMode = 'LIVE',
   savedArchives: externalArchives,
   setSavedArchives: externalSetArchives,
+  onSaveArchive,
+  onDeleteArchive,
   userRole = 'user'
 }) {
   const t = translations[lang] || translations.km;
@@ -153,7 +155,11 @@ export default function FuelLogTable({
       total_liters: totalLiters,
       logs: [...logs]
     };
-    setSavedArchives([newArchive, ...savedArchives]);
+    if (onSaveArchive) {
+      onSaveArchive(newArchive);
+    } else {
+      setSavedArchives([newArchive, ...savedArchives]);
+    }
     if (onClearActiveLogs) onClearActiveLogs();
     showToast(lang === 'km' ? 'បានរក្សាទុកតារាងជោគជ័យ! ផ្ទៃការងារបានសម្អាត។' : 'Table saved! Active table is now clean.');
   };
@@ -167,7 +173,11 @@ export default function FuelLogTable({
 
   const handleDeleteArchive = (archId) => {
     if (window.confirm(lang === 'km' ? 'លុបរបាយការណ៍ថ្ងៃ?' : 'Delete this saved archive?')) {
-      setSavedArchives(savedArchives.filter(a => a.id !== archId));
+      if (onDeleteArchive) {
+        onDeleteArchive(archId);
+      } else {
+        setSavedArchives(savedArchives.filter(a => a.id !== archId));
+      }
       if (selectedArchiveId === archId) { setSelectedArchiveId(''); setViewMode('LIVE'); }
     }
   };

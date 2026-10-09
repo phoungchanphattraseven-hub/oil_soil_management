@@ -522,6 +522,7 @@ function StaffForm({ initial = {}, stations = [], onSave, onCancel, lang }) {
             label={isKm ? 'ហត្ថលេខា (Signature)' : 'Signature Image'}
             hint={isKm ? 'រូបថត/ស្កេនហត្ថលេខា' : 'Signature image'}
             compact
+            removeBackground
           />
         </div>
       </div>

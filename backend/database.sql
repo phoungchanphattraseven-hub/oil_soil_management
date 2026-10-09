@@ -116,6 +116,17 @@ INSERT INTO users (username, role) VALUES ('phattra', 'phattra') ON CONFLICT (us
 --    ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 -- ─────────────────────────────────────────────────────────────────
 
+-- Step 8: Create fuel_archives table
+CREATE TABLE IF NOT EXISTS fuel_archives (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    archive_ref VARCHAR(100),
+    archive_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    saved_at VARCHAR(50),
+    total_liters NUMERIC(10, 2) DEFAULT 0.00,
+    logs JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Step 9: Insert station Y34
 INSERT INTO fuel_stations (station_name, location, current_stock_liters, target_capacity_liters, reorder_threshold_liters)
 VALUES ('Y34', 'National Road 4', 6000.00, 6000.00, 4000.00);
@@ -126,6 +137,7 @@ ALTER TABLE fuel_stations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE staff ENABLE ROW LEVEL SECURITY;
 ALTER TABLE fuel_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE soil_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE fuel_archives ENABLE ROW LEVEL SECURITY;
 
 -- Step 11: Create RLS policies
 CREATE POLICY "Allow all access to users" ON users FOR ALL USING (true) WITH CHECK (true);
@@ -133,4 +145,6 @@ CREATE POLICY "Allow all access to fuel_stations" ON fuel_stations FOR ALL USING
 CREATE POLICY "Allow all access to staff" ON staff FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access to fuel_logs" ON fuel_logs FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access to soil_logs" ON soil_logs FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all access to fuel_archives" ON fuel_archives FOR ALL USING (true) WITH CHECK (true);
+
 
