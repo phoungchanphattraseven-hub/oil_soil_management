@@ -465,11 +465,16 @@ def clear_all_fuel_logs():
     if not supabase:
         return {"status": "demo", "message": "All fuel logs cleared (demo mode)"}
     try:
-        res = supabase.table("fuel_logs").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
+        res = supabase.table("fuel_logs").delete().gte("created_at", "1970-01-01").execute()
         return {"status": "success", "message": "All active fuel logs cleared from database"}
     except Exception as err:
         print("Error clearing fuel logs:", str(err))
-        raise HTTPException(status_code=500, detail=str(err))
+        try:
+            res = supabase.table("fuel_logs").delete().filter("id", "not.is", "null").execute()
+            return {"status": "success", "message": "All active fuel logs cleared from database"}
+        except Exception as err2:
+            print("Fallback clear error:", str(err2))
+            raise HTTPException(status_code=500, detail=str(err2))
 
 
 @app.put("/api/fuel/log/{log_id}")

@@ -585,12 +585,7 @@ export default function App() {
         }
 
         if (Array.isArray(data.fuel_logs)) {
-          setFuelLogs(prev => {
-            const localQueued = prev.filter(l => queuedLogIds.has(l.id));
-            const backendIds = new Set(data.fuel_logs.map(f => f.id));
-            const freshQueued = localQueued.filter(l => !backendIds.has(l.id));
-            return [...data.fuel_logs, ...freshQueued].sort((a, b) => new Date(b.created_at || b.time_in) - new Date(a.created_at || a.time_in));
-          });
+          setFuelLogs(data.fuel_logs.sort((a, b) => new Date(b.created_at || b.time_in) - new Date(a.created_at || a.time_in)));
         }
 
         if (Array.isArray(data.soil_logs)) {
@@ -966,8 +961,14 @@ export default function App() {
   // Handler: Clear active fuel logs (archives live table and clears backend)
   const handleClearFuelLogs = () => {
     setFuelLogs([]);
+    try {
+      localStorage.setItem('app_fuel_logs', '[]');
+    } catch (_) {}
+    setOfflineQueue(prev => prev.filter(q => q.type !== 'fuel_log' && q.type !== 'log_fuel'));
     fetch(`${API_BASE_URL}/fuel/logs/clear`, { method: 'DELETE' })
-      .catch(e => console.log('Backend clear API offline, cleared locally.'));
+      .then(res => res.json())
+      .then(data => console.log('Active logs cleared on backend:', data))
+      .catch(e => console.log('Backend clear API offline, cleared locally.', e));
   };
 
   // Handler: Add new soil log
