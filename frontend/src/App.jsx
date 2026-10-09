@@ -482,7 +482,7 @@ export default function App() {
 
         console.log('Backend connected — loading fresh data');
 
-        if (data.stations && Array.isArray(data.stations) && data.stations.length > 0) {
+        if (data.stations && Array.isArray(data.stations)) {
           const mapped = data.stations.map(s => ({
             ...s,
             name: s.name || s.station_name || 'Station',
@@ -490,18 +490,18 @@ export default function App() {
           }));
           setFuelStations(mapped);
         }
-        if (data.fuel_logs && Array.isArray(data.fuel_logs) && data.fuel_logs.length > 0) {
+        if (data.fuel_logs && Array.isArray(data.fuel_logs)) {
           setFuelLogs(data.fuel_logs);
         }
-        if (data.soil_logs && Array.isArray(data.soil_logs) && data.soil_logs.length > 0) {
+        if (data.soil_logs && Array.isArray(data.soil_logs)) {
           setSoilLogs(data.soil_logs);
         }
-        if (data.staff && Array.isArray(data.staff) && data.staff.length > 0) {
+        if (data.staff && Array.isArray(data.staff)) {
           // Normalize: map station_name → working_at for UI compatibility
           const normalized = data.staff.map(s => ({ ...s, working_at: s.station_name || s.working_at || '' }));
           setStaff(normalized);
         }
-        if (data.archives && Array.isArray(data.archives) && data.archives.length > 0) {
+        if (data.archives && Array.isArray(data.archives)) {
           const normalizedArchives = data.archives.map(a => ({
             id: a.id || a.archive_ref,
             date: a.archive_date || a.date,
@@ -573,32 +573,44 @@ export default function App() {
         if (!res.ok) throw new Error(`Dashboard sync failed: ${res.status}`);
         const data = await res.json();
 
-        // Merge: prefer backend records but keep any local-only entries
-        const mergeById = (backendArr, localArr) => {
-          if (!backendArr?.length) return localArr;
-          const ids = new Set(backendArr.map(r => r.id));
-          const localOnly = localArr.filter(r => !ids.has(r.id));
-          return [...backendArr, ...localOnly];
-        };
+        // Sync states directly from backend arrays so cleared/archived tables update in real time
+        const queuedLogIds = new Set(offlineQueue.map(q => q.data?.id).filter(Boolean));
 
-        if (data.stations?.length > 0) {
-          setFuelStations(mergeById(data.stations, []).map(s => ({
+        if (Array.isArray(data.stations)) {
+          setFuelStations(data.stations.map(s => ({
             ...s,
             name: s.name || s.station_name || 'Station',
             status: s.current_stock_liters < s.reorder_threshold_liters ? 'Reorder Needed' : 'Normal'
           })));
         }
-        if (data.fuel_logs?.length > 0) {
-          setFuelLogs(prev => mergeById(data.fuel_logs, prev)
-            .sort((a, b) => new Date(b.created_at || b.time_in) - new Date(a.created_at || a.time_in)));
+
+        if (Array.isArray(data.fuel_logs)) {
+          setFuelLogs(prev => {
+            const localQueued = prev.filter(l => queuedLogIds.has(l.id));
+            const backendIds = new Set(data.fuel_logs.map(f => f.id));
+            const freshQueued = localQueued.filter(l => !backendIds.has(l.id));
+            return [...data.fuel_logs, ...freshQueued].sort((a, b) => new Date(b.created_at || b.time_in) - new Date(a.created_at || a.time_in));
+          });
         }
-        if (data.soil_logs?.length > 0) {
-          setSoilLogs(prev => mergeById(data.soil_logs, prev)
-            .sort((a, b) => new Date(b.created_at || b.log_date) - new Date(a.created_at || a.log_date)));
+
+        if (Array.isArray(data.soil_logs)) {
+          setSoilLogs(data.soil_logs.sort((a, b) => new Date(b.created_at || b.log_date) - new Date(a.created_at || a.log_date)));
         }
-        if (data.staff?.length > 0) {
+
+        if (Array.isArray(data.staff)) {
           const normalized = data.staff.map(s => ({ ...s, working_at: s.station_name || s.working_at || '' }));
-          setStaff(prev => mergeById(normalized, prev));
+          setStaff(normalized);
+        }
+
+        if (Array.isArray(data.archives)) {
+          const normalizedArchives = data.archives.map(a => ({
+            id: a.id || a.archive_ref,
+            date: a.archive_date || a.date,
+            saved_at: a.saved_at || '',
+            total_liters: parseFloat(a.total_liters) || 0,
+            logs: Array.isArray(a.logs) ? a.logs : []
+          }));
+          setSavedArchives(normalizedArchives);
         }
 
         await processOfflineQueue();
