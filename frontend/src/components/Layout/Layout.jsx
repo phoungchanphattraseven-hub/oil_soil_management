@@ -17,6 +17,7 @@ export default function Layout({
   sessionEmail,
   userRole,
   userName,
+  userAssignedStation,
   onExportData,
   onImportData,
   isOnline = true,
@@ -95,6 +96,7 @@ export default function Layout({
           sessionEmail={sessionEmail}
           userRole={userRole}
           userName={userName}
+          userAssignedStation={userAssignedStation}
           onExportData={onExportData}
           onImportData={onImportData}
           isOnline={isOnline}

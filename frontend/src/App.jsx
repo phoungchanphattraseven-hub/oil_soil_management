@@ -1079,6 +1079,7 @@ export default function App() {
         sessionEmail={sessionEmail} 
         userRole={userRole}
         userName={userName}
+        userAssignedStation={userAssignedStation}
         onExportData={handleExportData} 
         onImportData={handleImportData} 
         isOnline={isOnline} 
