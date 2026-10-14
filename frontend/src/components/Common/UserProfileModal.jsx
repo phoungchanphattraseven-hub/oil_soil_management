@@ -1,8 +1,114 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   User, Mail, Shield, MapPin, Camera, Trash2, X, Check,
-  Edit2
+  Edit2, Loader2
 } from 'lucide-react';
+
+/**
+ * Resize and compress image to fit within mobile localStorage quota (~50-100KB)
+ */
+function compressProfileImage(file, maxWidth = 320, maxHeight = 320, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Try JPEG with quality first, fallback to PNG if transparent
+        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedBase64);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function getActiveUserStorageKey(sessionEmail) {
+  const email = sessionEmail || localStorage.getItem('app_session_email') || '';
+  const cleanEmail = email ? email.trim().toLowerCase() : '';
+  const userName = localStorage.getItem('app_user_name') || '';
+  const cleanName = userName ? userName.trim().toLowerCase() : '';
+  return cleanEmail || cleanName || 'current_user';
+}
+
+function getStoredUserPhoto(userKey) {
+  try {
+    return localStorage.getItem(`app_user_photo_${userKey}`) 
+      || localStorage.getItem('app_current_user_photo') 
+      || '';
+  } catch {
+    return '';
+  }
+}
+
+function saveUserPhotoToStorage(userKey, base64) {
+  try {
+    localStorage.setItem(`app_user_photo_${userKey}`, base64);
+    localStorage.setItem('app_current_user_photo', base64);
+
+    // Also update locally managed user record if present
+    const managedRaw = localStorage.getItem('app_managed_users');
+    if (managedRaw) {
+      const list = JSON.parse(managedRaw);
+      const email = localStorage.getItem('app_session_email') || '';
+      const updated = list.map(u => {
+        if (email && u.email && u.email.toLowerCase() === email.toLowerCase()) {
+          return { ...u, photo_url: base64 };
+        }
+        return u;
+      });
+      localStorage.setItem('app_managed_users', JSON.stringify(updated));
+    }
+  } catch (err) {
+    console.error('Failed to save profile photo into storage:', err);
+  }
+}
+
+function removeUserPhotoFromStorage(userKey) {
+  try {
+    localStorage.removeItem(`app_user_photo_${userKey}`);
+    localStorage.removeItem('app_current_user_photo');
+
+    const managedRaw = localStorage.getItem('app_managed_users');
+    if (managedRaw) {
+      const list = JSON.parse(managedRaw);
+      const email = localStorage.getItem('app_session_email') || '';
+      const updated = list.map(u => {
+        if (email && u.email && u.email.toLowerCase() === email.toLowerCase()) {
+          const { photo_url, ...rest } = u;
+          return rest;
+        }
+        return u;
+      });
+      localStorage.setItem('app_managed_users', JSON.stringify(updated));
+    }
+  } catch (err) {}
+}
 
 export default function UserProfileModal({
   isOpen,
@@ -17,22 +123,14 @@ export default function UserProfileModal({
   const isKm = lang === 'km';
   const fileInputRef = useRef(null);
 
-  // Storage key for user profile avatar and metadata
-  const userKey = sessionEmail || 'default_user';
-  const storagePhotoKey = `app_user_photo_${userKey.toLowerCase()}`;
-  const storageNameKey = `app_user_custom_name_${userKey.toLowerCase()}`;
+  const userKey = getActiveUserStorageKey(sessionEmail);
+  const storageNameKey = `app_user_custom_name_${userKey}`;
 
-  const [avatarUrl, setAvatarUrl] = useState(() => {
-    try {
-      return localStorage.getItem(storagePhotoKey) || '';
-    } catch {
-      return '';
-    }
-  });
+  const [avatarUrl, setAvatarUrl] = useState(() => getStoredUserPhoto(userKey));
 
   const [name, setName] = useState(() => {
     try {
-      return localStorage.getItem(storageNameKey) || userName || (sessionEmail ? sessionEmail.split('@')[0].replace(/[._-]/g, ' ') : 'User');
+      return localStorage.getItem(storageNameKey) || userName || localStorage.getItem('app_user_name') || (sessionEmail ? sessionEmail.split('@')[0].replace(/[._-]/g, ' ') : 'User');
     } catch {
       return userName || 'User';
     }
@@ -41,6 +139,7 @@ export default function UserProfileModal({
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(name);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Lock background scroll completely when modal is open
   useEffect(() => {
@@ -67,14 +166,15 @@ export default function UserProfileModal({
   useEffect(() => {
     if (isOpen) {
       try {
-        const savedPhoto = localStorage.getItem(storagePhotoKey) || '';
-        const savedName = localStorage.getItem(storageNameKey) || userName || (sessionEmail ? sessionEmail.split('@')[0].replace(/[._-]/g, ' ') : 'User');
+        const key = getActiveUserStorageKey(sessionEmail);
+        const savedPhoto = getStoredUserPhoto(key);
+        const savedName = localStorage.getItem(`app_user_custom_name_${key}`) || userName || localStorage.getItem('app_user_name') || (sessionEmail ? sessionEmail.split('@')[0].replace(/[._-]/g, ' ') : 'User');
         setAvatarUrl(savedPhoto);
         setName(savedName);
         setEditedName(savedName);
       } catch {}
     }
-  }, [isOpen, sessionEmail, userName, storagePhotoKey, storageNameKey]);
+  }, [isOpen, sessionEmail, userName]);
 
   if (!isOpen) return null;
 
@@ -85,7 +185,7 @@ export default function UserProfileModal({
 
   const initialLetter = (displayName || 'U').charAt(0).toUpperCase();
 
-  const handlePhotoUpload = (e) => {
+  const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -94,41 +194,34 @@ export default function UserProfileModal({
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert(isKm ? 'ទំហំរូបភាពធំពេក (អតិបរមា 5MB)' : 'Image is too large (max 5MB)');
-      return;
-    }
+    try {
+      setIsProcessing(true);
+      // Compress the image down to ~50-80KB to prevent mobile browser storage quota exceeded error
+      const compressedBase64 = await compressProfileImage(file, 320, 320, 0.85);
+      
+      setAvatarUrl(compressedBase64);
+      saveUserPhotoToStorage(userKey, compressedBase64);
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result;
-      if (typeof base64 === 'string') {
-        setAvatarUrl(base64);
-        try {
-          localStorage.setItem(storagePhotoKey, base64);
-          window.dispatchEvent(new Event('app_user_profile_updated'));
-          if (onUpdateProfile) {
-            onUpdateProfile({ avatarUrl: base64, name });
-          }
-        } catch (err) {
-          console.warn('Could not save avatar:', err);
-        }
-        triggerSuccessFeedback();
+      window.dispatchEvent(new Event('app_user_profile_updated'));
+      if (onUpdateProfile) {
+        onUpdateProfile({ avatarUrl: compressedBase64, name });
       }
-    };
-    reader.readAsDataURL(file);
+      triggerSuccessFeedback();
+    } catch (err) {
+      console.error('Error processing photo:', err);
+      alert(isKm ? 'មិនអាចរក្សាទុករូបភាពបានទេ សូមព្យាយាមម្តងទៀត' : 'Could not process photo, please try again');
+    } finally {
+      setIsProcessing(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleRemovePhoto = () => {
     setAvatarUrl('');
-    try {
-      localStorage.removeItem(storagePhotoKey);
-      window.dispatchEvent(new Event('app_user_profile_updated'));
-      if (onUpdateProfile) {
-        onUpdateProfile({ avatarUrl: '', name });
-      }
-    } catch (err) {
-      console.warn('Could not remove avatar:', err);
+    removeUserPhotoFromStorage(userKey);
+    window.dispatchEvent(new Event('app_user_profile_updated'));
+    if (onUpdateProfile) {
+      onUpdateProfile({ avatarUrl: '', name });
     }
     triggerSuccessFeedback();
   };
@@ -294,16 +387,19 @@ export default function UserProfileModal({
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   className="btn btn-sm"
+                  disabled={isProcessing}
                   style={{
                     padding: '5px 10px',
                     fontSize: '0.75rem',
                     background: 'var(--surface-card)',
                     border: '1px solid var(--border-medium)',
-                    color: 'var(--text-main)'
+                    color: 'var(--text-main)',
+                    opacity: isProcessing ? 0.7 : 1,
+                    cursor: isProcessing ? 'wait' : 'pointer'
                   }}
                 >
-                  <Camera size={13} />
-                  <span>{isKm ? 'ប្តូររូប' : 'Upload'}</span>
+                  {isProcessing ? <Loader2 size={13} className="spin" /> : <Camera size={13} />}
+                  <span>{isProcessing ? (isKm ? 'កំពុងដំណើរការ...' : 'Compressing...') : (isKm ? 'ប្តូររូប' : 'Upload')}</span>
                 </button>
                 {avatarUrl && (
                   <button

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Fuel, HardHat, ShieldCheck, AlertTriangle, X, Settings } from 'lucide-react';
+import { LayoutDashboard, Fuel, HardHat, ShieldCheck, AlertTriangle, X, Settings, Users, Building2, Gauge, UserCheck } from 'lucide-react';
 import { translations } from '../../data/translations';
 
 export default function Sidebar({ alertCount = 0, lang = 'km', userRole = 'user', onClose }) {
@@ -23,7 +23,6 @@ export default function Sidebar({ alertCount = 0, lang = 'km', userRole = 'user'
         icon: <Fuel size={18} />,
         label: isUser ? (lang === 'km' ? 'កត់ត្រាសាំង' : 'Fuel Log') : t.session1Fuel,
         accent: 'var(--fuel-accent)',
-        // Only show alert badge for admins
         badge: (!isUser && alertCount > 0) ? alertCount : null
       },
       {
@@ -31,6 +30,31 @@ export default function Sidebar({ alertCount = 0, lang = 'km', userRole = 'user'
         icon: <HardHat size={18} />,
         label: isUser ? (lang === 'km' ? ' កត់ត្រាដី' : 'Soil Log') : t.session2Soil,
         accent: 'var(--soil-accent)',
+      },
+      {
+        to: '/staff', end: false,
+        icon: <Users size={18} />,
+        label: t.staffNav || (lang === 'km' ? 'បុគ្គលិក' : 'Staff'),
+        accent: '#8b5cf6',
+      },
+      {
+        to: '/attendance', end: false,
+        icon: <UserCheck size={18} />,
+        label: t.attendanceNav || (lang === 'km' ? 'វត្តមានបុគ្គលិក' : 'Attendance Report'),
+        accent: '#06b6d4',
+      },
+      {
+        to: '/stations', end: false,
+        icon: <Building2 size={18} />,
+        label: t.stationsNav || (lang === 'km' ? 'ស្ថានីយ៍' : 'Stations'),
+        accent: '#3b82f6',
+      },
+      {
+        to: '/stock', end: false,
+        icon: <Gauge size={18} />,
+        label: t.stockNav || (lang === 'km' ? 'ស្តុកសាំង' : 'Stock'),
+        accent: 'var(--fuel-accent)',
+        badge: alertCount > 0 ? alertCount : null
       }
     ];
 
@@ -117,43 +141,109 @@ export default function Sidebar({ alertCount = 0, lang = 'km', userRole = 'user'
             to={to}
             end={end}
             onClick={() => { if (onClose) onClose(); }}
-            style={({ isActive }) => ({
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '11px 12px',
-              borderRadius: 'var(--r-sm)',
-              color: isActive ? 'var(--text-main)' : 'var(--text-sub)',
-              background: isActive ? `rgba(${accent === 'var(--primary)' ? '79,125,245' : accent === 'var(--fuel-accent)' ? '245,158,11' : '16,185,129'}, 0.12)` : 'transparent',
-              fontWeight: isActive ? 600 : 500,
-              fontSize: '0.86rem',
-              transition: 'var(--transition-fast)',
-              borderLeft: isActive ? `3px solid ${accent}` : '3px solid transparent',
-              paddingLeft: '10px'
-            })}
+            style={({ isActive }) => {
+              const bg = accent === 'var(--fuel-accent)'
+                ? 'rgba(245, 158, 11, 0.12)'
+                : accent === 'var(--soil-accent)'
+                ? 'rgba(16, 185, 129, 0.12)'
+                : accent === '#8b5cf6'
+                ? 'rgba(139, 92, 246, 0.12)'
+                : accent === '#06b6d4'
+                ? 'rgba(6, 182, 212, 0.12)'
+                : accent === '#3b82f6'
+                ? 'rgba(59, 130, 246, 0.12)'
+                : 'rgba(99, 102, 241, 0.12)';
+
+              const border = accent === 'var(--fuel-accent)'
+                ? '1px solid rgba(245, 158, 11, 0.25)'
+                : accent === 'var(--soil-accent)'
+                ? '1px solid rgba(16, 185, 129, 0.25)'
+                : accent === '#8b5cf6'
+                ? '1px solid rgba(139, 92, 246, 0.25)'
+                : accent === '#06b6d4'
+                ? '1px solid rgba(6, 182, 212, 0.25)'
+                : accent === '#3b82f6'
+                ? '1px solid rgba(59, 130, 246, 0.25)'
+                : '1px solid rgba(99, 102, 241, 0.25)';
+
+              return {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '9px 12px',
+                borderRadius: '8px',
+                color: isActive ? 'var(--text-main)' : 'var(--text-muted)',
+                background: isActive ? bg : 'transparent',
+                border: isActive ? border : '1px solid transparent',
+                fontWeight: isActive ? 600 : 500,
+                fontSize: '0.84rem',
+                transition: 'all 0.15s ease',
+                textDecoration: 'none'
+              };
+            }}
           >
-            {({ isActive }) => (
-              <>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ color: isActive ? accent : 'var(--text-muted)', display: 'flex' }}>
-                    {icon}
-                  </span>
-                  <span>{label}</span>
-                </div>
+            {({ isActive }) => {
+              const iconBg = isActive
+                ? (accent === 'var(--fuel-accent)'
+                    ? 'rgba(245, 158, 11, 0.18)'
+                    : accent === 'var(--soil-accent)'
+                    ? 'rgba(16, 185, 129, 0.18)'
+                    : accent === '#8b5cf6'
+                    ? 'rgba(139, 92, 246, 0.18)'
+                    : accent === '#06b6d4'
+                    ? 'rgba(6, 182, 212, 0.18)'
+                    : accent === '#3b82f6'
+                    ? 'rgba(59, 130, 246, 0.18)'
+                    : 'rgba(99, 102, 241, 0.18)')
+                : 'var(--surface-subtle, rgba(255,255,255,0.04))';
+
+              return (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: iconBg,
+                        color: isActive ? accent : 'var(--text-muted)',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      {icon}
+                    </div>
+                    <span style={{ color: isActive ? 'var(--text-main)' : 'var(--text-sub)' }}>
+                      {label}
+                    </span>
+                  </div>
                 {badge !== null && badge !== undefined && (
-                  <span className="badge badge-warning" style={{ fontSize: '0.63rem', padding: '2px 6px' }}>
+                  <span
+                    style={{
+                      fontSize: '0.66rem',
+                      fontWeight: 700,
+                      padding: '2px 7px',
+                      borderRadius: '10px',
+                      background: 'rgba(239, 68, 68, 0.12)',
+                      color: 'var(--danger)',
+                      border: '1px solid rgba(239, 68, 68, 0.25)'
+                    }}
+                  >
                     {badge}
                   </span>
                 )}
               </>
-            )}
+              );
+            }}
           </NavLink>
         ))}
 
         {/* Admin-only section */}
         {navLinks.some(l => l.adminOnly) && (
           <>
-            <div className="section-label" style={{ padding: '12px 8px 6px', marginBottom: 0, fontSize: '0.64rem' }}>
+            <div className="section-label" style={{ padding: '14px 8px 6px', marginBottom: 0, fontSize: '0.64rem' }}>
               {lang === 'km' ? 'ការគ្រប់គ្រង' : 'Administration'}
             </div>
             {navLinks.filter(l => l.adminOnly).map(({ to, end, icon, label, accent }) => (
@@ -166,23 +256,37 @@ export default function Sidebar({ alertCount = 0, lang = 'km', userRole = 'user'
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '11px 12px',
-                  borderRadius: 'var(--r-sm)',
-                  color: isActive ? 'var(--text-main)' : 'var(--text-sub)',
-                  background: isActive ? 'rgba(79,125,245,0.12)' : 'transparent',
+                  padding: '9px 12px',
+                  borderRadius: '8px',
+                  color: isActive ? 'var(--text-main)' : 'var(--text-muted)',
+                  background: isActive ? 'rgba(99, 102, 241, 0.12)' : 'transparent',
+                  border: isActive ? '1px solid rgba(99, 102, 241, 0.25)' : '1px solid transparent',
                   fontWeight: isActive ? 600 : 500,
-                  fontSize: '0.86rem',
-                  transition: 'var(--transition-fast)',
-                  borderLeft: isActive ? `3px solid ${accent}` : '3px solid transparent',
-                  paddingLeft: '10px'
+                  fontSize: '0.84rem',
+                  transition: 'all 0.15s ease',
+                  textDecoration: 'none'
                 })}
               >
                 {({ isActive }) => (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ color: isActive ? accent : 'var(--text-muted)', display: 'flex' }}>
+                    <div
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: isActive ? 'rgba(99, 102, 241, 0.18)' : 'var(--surface-subtle, rgba(255,255,255,0.04))',
+                        color: isActive ? accent : 'var(--text-muted)',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
                       {icon}
+                    </div>
+                    <span style={{ color: isActive ? 'var(--text-main)' : 'var(--text-sub)' }}>
+                      {label}
                     </span>
-                    <span>{label}</span>
                   </div>
                 )}
               </NavLink>

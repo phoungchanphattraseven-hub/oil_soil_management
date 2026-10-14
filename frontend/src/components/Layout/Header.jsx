@@ -30,21 +30,27 @@ export default function Header({
   const [showProfileModal, setShowProfileModal] = useState(false);
 
   // Storage key for user profile avatar and metadata
-  const userKey = sessionEmail || 'default_user';
-  const storagePhotoKey = `app_user_photo_${userKey.toLowerCase()}`;
-  const storageNameKey = `app_user_custom_name_${userKey.toLowerCase()}`;
+  const activeEmail = sessionEmail || (typeof window !== 'undefined' ? localStorage.getItem('app_session_email') : '') || '';
+  const activeName = userName || (typeof window !== 'undefined' ? localStorage.getItem('app_user_name') : '') || '';
+  const userKey = (activeEmail ? activeEmail.trim().toLowerCase() : '') || (activeName ? activeName.trim().toLowerCase() : '') || 'current_user';
+  const storagePhotoKey = `app_user_photo_${userKey}`;
+  const storageNameKey = `app_user_custom_name_${userKey}`;
 
-  const [userPhoto, setUserPhoto] = useState(() => {
+  const getStoredPhoto = () => {
     try {
-      return localStorage.getItem(storagePhotoKey) || '';
+      return localStorage.getItem(storagePhotoKey) 
+        || localStorage.getItem('app_current_user_photo') 
+        || '';
     } catch {
       return '';
     }
-  });
+  };
+
+  const [userPhoto, setUserPhoto] = useState(getStoredPhoto);
 
   const [customName, setCustomName] = useState(() => {
     try {
-      return localStorage.getItem(storageNameKey) || userName || '';
+      return localStorage.getItem(storageNameKey) || userName || localStorage.getItem('app_user_name') || '';
     } catch {
       return userName || '';
     }
@@ -54,8 +60,8 @@ export default function Header({
   useEffect(() => {
     const handleProfileUpdate = () => {
       try {
-        const photo = localStorage.getItem(storagePhotoKey) || '';
-        const name = localStorage.getItem(storageNameKey) || userName || '';
+        const photo = getStoredPhoto();
+        const name = localStorage.getItem(storageNameKey) || userName || localStorage.getItem('app_user_name') || '';
         setUserPhoto(photo);
         setCustomName(name);
       } catch {}

@@ -101,7 +101,7 @@ class SoilLogInput(BaseModel):
     logged_by: Optional[str] = None
     trip_count: int
     cubic_meters_per_trip: float
-    scrap_sales_amount: float = 0.0
+    scrap_sales_amount: Optional[float] = 0.0
     staff_decisions: Optional[str] = None
     issues_description: Optional[str] = None
     receipt_photo_url: Optional[str] = ""
@@ -603,7 +603,7 @@ def log_soil_entry(data: SoilLogInput):
             "code_abbr": data.code_abbr or "SL-STN-001",
             "trip_count": data.trip_count,
             "cubic_meters_per_trip": data.cubic_meters_per_trip,
-            "scrap_sales_amount": data.scrap_sales_amount,
+            "scrap_sales_amount": data.scrap_sales_amount or 0.0,
             "staff_decisions": data.staff_decisions,
             "issues_description": data.issues_description,
             "receipt_photo_url": data.receipt_photo_url or "",
@@ -627,6 +627,65 @@ def log_soil_entry(data: SoilLogInput):
     except Exception as err:
         print("Error logging soil:", str(err))
         raise HTTPException(status_code=500, detail=str(err))
+
+@app.delete("/api/soil/log/{log_id}")
+def delete_soil_log(log_id: str):
+    if not supabase:
+        return {"status": "demo", "message": f"Soil log {log_id} deleted (demo mode)"}
+    try:
+        if is_valid_uuid(log_id):
+            res = supabase.table("soil_logs").delete().eq("id", log_id).execute()
+            return {"status": "success", "data": res.data}
+        else:
+            return {"status": "success", "message": f"Local soil log {log_id} removed"}
+    except Exception as err:
+        print("Error deleting soil log:", str(err))
+        raise HTTPException(status_code=500, detail=str(err))
+
+@app.put("/api/soil/log/{log_id}")
+def update_soil_log(log_id: str, data: SoilLogInput):
+    if not supabase:
+        return {"status": "demo", "data": data.dict()}
+    try:
+        if not is_valid_uuid(log_id):
+            return {"status": "success", "message": f"Local soil log {log_id} updated (no Supabase sync needed)"}
+
+        update_data = {
+            "station_name": data.station_name,
+            "code_abbr": data.code_abbr or "SL-STN-001",
+            "trip_count": data.trip_count,
+            "cubic_meters_per_trip": data.cubic_meters_per_trip,
+            "scrap_sales_amount": data.scrap_sales_amount or 0.0,
+            "staff_decisions": data.staff_decisions,
+            "issues_description": data.issues_description,
+            "receipt_photo_url": data.receipt_photo_url or "",
+            "time_start": data.time_start,
+            "time_end": data.time_end
+        }
+        if data.log_date:
+            update_data["log_date"] = data.log_date
+
+        res = supabase.table("soil_logs").update(update_data).eq("id", log_id).execute()
+        return {"status": "success", "data": res.data}
+    except Exception as err:
+        print("Error updating soil log:", str(err))
+        raise HTTPException(status_code=500, detail=str(err))
+
+@app.delete("/api/soil/logs/clear")
+def clear_all_soil_logs():
+    if not supabase:
+        return {"status": "demo", "message": "All soil logs cleared (demo mode)"}
+    try:
+        res = supabase.table("soil_logs").delete().gte("created_at", "1970-01-01").execute()
+        return {"status": "success", "message": "All active soil logs cleared from database"}
+    except Exception as err:
+        print("Error clearing soil logs:", str(err))
+        try:
+            res = supabase.table("soil_logs").delete().filter("id", "not.is", "null").execute()
+            return {"status": "success", "message": "All active soil logs cleared from database"}
+        except Exception as err2:
+            print("Fallback clear error:", str(err2))
+            raise HTTPException(status_code=500, detail=str(err2))
 
 # ──────────────────────────────────────────────
 # Staff CRUD Endpoints

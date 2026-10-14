@@ -15,7 +15,6 @@ export default function Dashboard({ fuelStations = [], fuelLogs = [], soilLogs =
   const totalCapacity    = fuelStations.reduce((sum, s) => sum + (s.target_capacity_liters || 6000), 0);
   const totalSoilVolume  = soilLogs.reduce((sum, s) => sum + (s.total_cubic_meters || 0), 0);
   const totalSoilTrips   = soilLogs.reduce((sum, s) => sum + (s.trip_count || 0), 0);
-  const totalScrapSales  = soilLogs.reduce((sum, s) => sum + (s.scrap_sales_amount || 0), 0);
 
   // ── User reporting view ─────────────────────────────────────
   if (userRole === 'user') {
@@ -329,7 +328,7 @@ export default function Dashboard({ fuelStations = [], fuelLogs = [], soilLogs =
 
       <AlertBanner lowStockStations={lowStockStations} lang={lang} />
 
-      <div className="grid-4 mb-6">
+      <div className="grid-3 mb-6">
         <div className="card" style={{ padding: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{t.totalFuelStock}</span>
@@ -355,15 +354,6 @@ export default function Dashboard({ fuelStations = [], fuelLogs = [], soilLogs =
           </div>
           <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--soil-accent)', letterSpacing: '-0.02em' }}>{totalSoilVolume.toLocaleString()} m³</div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '4px' }}>{t.totalTripsCount?.replace('{trips}', totalSoilTrips)}</div>
-        </div>
-
-        <div className="card" style={{ padding: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{t.scrapSalesIncome}</span>
-            <div style={{ padding: '6px', background: 'rgba(251, 191, 36, 0.12)', borderRadius: 'var(--radius-xs)', color: '#fbbf24', display: 'flex' }}><DollarSign size={16} /></div>
-          </div>
-          <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#fbbf24', letterSpacing: '-0.02em' }}>${totalScrapSales.toFixed(2)}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '4px' }}>{t.soilAndScrap}</div>
         </div>
       </div>
 

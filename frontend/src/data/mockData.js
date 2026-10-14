@@ -21,6 +21,6 @@ export const MOCK_USERS = {
 export const DEFAULT_FUEL_STATIONS = [];
 export const INITIAL_FUEL_LOGS = [];
 export const INITIAL_SOIL_LOGS = [];
-export const DEFAULT_ABBR_CODES = ['2A-8899', '3B-4455', 'PP-3912', '3C-7788'];
-export const DEFAULT_DRIVERS = ['សុខ ជា', 'វណ្ណៈ', 'បូរី', 'ចាន់'];
+export const DEFAULT_ABBR_CODES = ['3G-7433', '3G-9444', '3G-9084', '3G-9449', 'KB-010', 'KB-011', 'KB-014', 'KB-016', 'KB-015', '3G-7424'];
+export const DEFAULT_DRIVERS = [];
 

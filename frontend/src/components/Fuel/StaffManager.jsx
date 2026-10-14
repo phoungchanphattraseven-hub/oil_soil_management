@@ -14,7 +14,7 @@ const GENDER_OPTIONS = {
 
 const ROLE_OPTIONS = {
   km: [
-    'ឡានចាក់ដី',
+    'កុងឡានចាក់ដី',
     'បុគ្គលិកប្រតិបត្តិការ',
     'អ្នកគ្រប់គ្រងស្ថានីយ៍',
     'ជំនួយការ',
@@ -25,7 +25,7 @@ const ROLE_OPTIONS = {
     'ផ្សេងៗ',
   ],
   en: [
-    'Dump Truck Driver (ឡានចាក់ដី)',
+    'Dump Truck Driver (កុងឡានចាក់ដី)',
     'Operations Staff',
     'Station Manager',
     'Assistant',

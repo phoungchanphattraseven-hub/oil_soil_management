@@ -32,7 +32,7 @@ export default function SummaryTable({ lang = 'km' }) {
     {
       section: "ស្ថានីយ៍ចាក់ដី (Session 2)",
       indicator: "របាយការណ៍ប្រតិបត្តិការ (Daily Report & Decision)",
-      standard: "Date, Time, Amount, m³/per, សកម្មភាពលក់សឡាក់, បញ្ហា, ការសម្រេចចិត្តរបស់បុគ្គលិក",
+      standard: "Date, Time, Amount, m³/per, បញ្ហា, ការសម្រេចចិត្តរបស់បុគ្គលិក",
       status: "របាយការណ៍ប្រចាំថ្ងៃ"
     },
     {
@@ -69,7 +69,7 @@ export default function SummaryTable({ lang = 'km' }) {
     {
       section: "Soil Station (Session 2)",
       indicator: "Daily Operational Report",
-      standard: "Date, Time range, Amount, m³/per, Scrap sales, Issues, Staff Decisions",
+      standard: "Date, Time range, Amount, m³/per, Issues, Staff Decisions",
       status: "Shift Logging"
     },
     {

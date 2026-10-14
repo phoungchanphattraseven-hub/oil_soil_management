@@ -7,8 +7,12 @@ export const translations = {
     appSub: "ប្រព័ន្ធគ្រប់គ្រងស្ថានីយ៍",
     mainNav: "ការរុករកមេ (MAIN NAVIGATION)",
     dashboard: "ផ្ទាំងគ្រប់គ្រង (Dashboard)",
-    session1Fuel: "Session 1: ចាក់សាំង (Fuel)",
-    session2Soil: "Session 2: ចាក់ដី (Soil)",
+    session1Fuel: "ចាក់សាំង (Fuel)",
+    session2Soil: "ចាក់ដី (Soil)",
+    staffNav: "បុគ្គលិក (Staff)",
+    stationsNav: "ស្ថានីយ៍ (Stations)",
+    stockNav: "ស្តុកសាំង (Stock)",
+    attendanceNav: "វត្តមានបុគ្គលិក (Attendance)",
     thresholdAlertNav: "កម្រិតស្តុក (Threshold Alert)",
     thresholdAlertDesc: "ស្តុកទាបជាង 4,000 L ត្រូវរាយការណ៍សុំបន្ថែមភ្លាមៗ។ Target: 6,000 L",
     
@@ -30,8 +34,6 @@ export const translations = {
     belowThreshold: "ស្តុកទាបជាង 4,000 L",
     totalSoilVolume: "មាឌដីចាក់សរុប (Soil m³)",
     totalTripsCount: "សរុប {trips} ជើងដឹក",
-    scrapSalesIncome: "ចំណូលលក់សឡាក់ ($)",
-    soilAndScrap: "ចាក់ដី & សមារៈសល់",
 
     // Dashboard Panels
     fuelStationsTitle: "Session 1: ស្ថានីយ៍ចាក់សាំង (Fuel Stations)",
@@ -52,7 +54,6 @@ export const translations = {
     tripsCount: "ចំនួនជើងដឹក",
     tripsUnit: "ជើង",
     totalVolumeLabel: "មាឌដីសរុប",
-    scrapSalesLabel: "លក់សឡាក់",
     staffDecisionLabel: "ការសម្រេចចិត្តរបស់បុគ្គលិក (Staff Decision):",
     issuesLabel: "បញ្ហាជួបប្រទះ:",
 
@@ -97,10 +98,9 @@ export const translations = {
 
     // Soil Management Page
     soilPageTitle: "Session 2: ការគ្រប់គ្រងស្ថានីយ៍ចាក់ដី និងការសម្រេចចិត្តរបស់បុគ្គលិក (Soil & Earthwork)",
-    soilPageSub: "តាមដានចំនួនជើងដឹក, មាឌដី ($m^3$), ការលក់សឡាក់, វិក្កយបត្រ, និង «ការសម្រេចចិត្តរបស់បុគ្គលិក» (Point 3.2 Correction)",
+    soilPageSub: "តាមដានចំនួនជើងដឹក, មាឌដី ($m^3$), វិក្កយបត្រ, និង «ការសម្រេចចិត្តរបស់បុគ្គលិក» (Point 3.2 Correction)",
     totalSoilVolumeStat: "មាឌដីចាក់សរុប",
     totalTripsStat: "ចំនួនជើងដឹកសរុប",
-    totalScrapStat: "សរុបការលក់សឡាក់",
     soilFormTitle: "កត់ត្រាសកម្មភាពចាក់ដី & ការសម្រេចចិត្តរបស់បុគ្គលិក (Earthwork Log Form)",
     soilFormSuccess: "បានកត់ត្រាទិន្នន័យចាក់ដី និងការសម្រេចចិត្តរបស់បុគ្គលិកជោគជ័យ!",
     stationNameLabel: "ឈ្មោះស្ថានីយ៍ចាក់ដី (Station Name)",
@@ -109,7 +109,6 @@ export const translations = {
     m3PerTripLabel: "មាឌដីក្នុងមួយជើង (m³ / Trip)",
     totalVolumeAuto: "មាឌដីសរុបស្វ័យប្រវត្ត (Total m³)",
     timeRangeLabel: "ម៉ោងចាប់ផ្តើម - ម៉ោងបញ្ចប់ (Time Range)",
-    scrapSalesInputLabel: "ការលក់សឡាក់ ($ Scrap Sales Amount)",
     staffDecisionInputLabel: "ការសម្រេចចិត្តរបស់បុគ្គលិក (Staff Decision - Point 3.2 Correction)",
     issuesInputLabel: "បញ្ហាជួបប្រទះ (Operational Issues Encountered)",
     receiptPhotoUrlLabel: "រូបភាពវិក្កយបត្រ (Receipt Photo URL - kept the receipt)",
@@ -120,7 +119,6 @@ export const translations = {
     thDateRange: "កាលបរិច្ឆេទ & ម៉ោង",
     thTrips: "ចំនួនជើង",
     thTotalM3: "មាឌដីសរុប (m³)",
-    thScrapSales: "លក់សឡាក់ ($)",
     thStaffDecision: "ការសម្រេចចិត្តរបស់បុគ្គលិក (Staff Decision)",
     thReceipt: "វិក្កយបត្រ (Receipt)",
     thIssues: "បញ្ហាជួបប្រទះ",
@@ -133,8 +131,12 @@ export const translations = {
     appSub: "Station Management System",
     mainNav: "MAIN NAVIGATION",
     dashboard: "Dashboard Overview",
-    session1Fuel: "Session 1: Fuel & Refueling",
-    session2Soil: "Session 2: Soil & Earthwork",
+    session1Fuel: "Fuel & Refueling",
+    session2Soil: "Soil & Earthwork",
+    staffNav: "Staff & Fleet",
+    stationsNav: "Stations",
+    stockNav: "Fuel Stock",
+    attendanceNav: "Attendance Report",
     thresholdAlertNav: "Stock Threshold Alert",
     thresholdAlertDesc: "Stock below 4,000 L requires immediate reorder report. Target: 6,000 L",
     
@@ -156,8 +158,6 @@ export const translations = {
     belowThreshold: "Stock below 4,000 L",
     totalSoilVolume: "Total Soil Volume",
     totalTripsCount: "Total {trips} trip(s)",
-    scrapSalesIncome: "Scrap Sales Revenue ($)",
-    soilAndScrap: "Earthwork & Secondary Sales",
 
     // Dashboard Panels
     fuelStationsTitle: "Session 1: Fuel Stations",
@@ -178,7 +178,6 @@ export const translations = {
     tripsCount: "Trips Completed",
     tripsUnit: "trips",
     totalVolumeLabel: "Total Volume",
-    scrapSalesLabel: "Scrap Sales",
     staffDecisionLabel: "Staff Decision:",
     issuesLabel: "Operational Issues:",
 
@@ -223,10 +222,9 @@ export const translations = {
 
     // Soil Management Page
     soilPageTitle: "Session 2: Soil & Earthwork Station Management",
-    soilPageSub: "Track trip counts, volume (m³), scrap sales, receipts, and Staff Decisions (Point 3.2 Correction)",
+    soilPageSub: "Track trip counts, volume (m³), receipts, and Staff Decisions (Point 3.2 Correction)",
     totalSoilVolumeStat: "Total Soil Volume",
     totalTripsStat: "Total Trips Count",
-    totalScrapStat: "Total Scrap Sales",
     soilFormTitle: "Earthwork & Staff Decision Entry Form",
     soilFormSuccess: "Soil log and staff decision recorded successfully!",
     stationNameLabel: "Soil Station Name",
@@ -235,7 +233,6 @@ export const translations = {
     m3PerTripLabel: "Volume per Trip (m³)",
     totalVolumeAuto: "Auto Calculated Total (m³)",
     timeRangeLabel: "Time Range (Start - End)",
-    scrapSalesInputLabel: "Scrap Sales Amount ($)",
     staffDecisionInputLabel: "Staff Decision (Point 3.2 Correction)",
     issuesInputLabel: "Operational Issues Encountered",
     receiptPhotoUrlLabel: "Receipt Photo URL (Kept Receipt)",
@@ -246,7 +243,6 @@ export const translations = {
     thDateRange: "Date & Time",
     thTrips: "Trips",
     thTotalM3: "Total Volume (m³)",
-    thScrapSales: "Scrap Sales ($)",
     thStaffDecision: "Staff Decision",
     thReceipt: "Receipt",
     thIssues: "Issues Encountered",

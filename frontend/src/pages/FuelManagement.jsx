@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import FuelLogForm from '../components/Fuel/FuelLogForm';
 import FuelLogTable from '../components/Fuel/FuelLogTable';
 import FuelDateMaster from '../components/Fuel/FuelDateMaster';
@@ -18,7 +19,7 @@ import {
 import { translations } from '../data/translations';
 
 const FUEL_SUBTAB_STORAGE_KEY = 'app_fuel_active_subtab';
-const FUEL_SUBTABS = ['daily', 'calendar', 'stations', 'fleet', 'sop', 'archives'];
+const FUEL_SUBTABS = ['daily', 'calendar', 'sop', 'archives'];
 
 export default function FuelManagement({
   stations = [],
@@ -68,7 +69,7 @@ export default function FuelManagement({
 
   // Redirect regular users if they try to access admin-only tabs
   React.useEffect(() => {
-    if (userRole !== 'admin' && ['stations', 'fleet', 'sop', 'archives'].includes(activeSubTab)) {
+    if (userRole !== 'admin' && ['sop', 'archives'].includes(activeSubTab)) {
       setActiveSubTab('daily');
     }
   }, [userRole, activeSubTab]);
@@ -175,14 +176,22 @@ export default function FuelManagement({
             <FileText size={14} />
             {lang === 'km' ? 'បង្កើតឯកសារផ្លូវការ' : 'Official Document'}
           </button>
-          <button
-            onClick={() => setShowAddStation(true)}
+          <Link
+            to="/stock"
             className="btn btn-secondary btn-sm"
-            style={{ height: '36px' }}
+            style={{ height: '36px', gap: '6px', display: 'inline-flex', alignItems: 'center' }}
           >
-            <Plus size={14} />
-            {lang === 'km' ? 'បន្ថែមស្ថានីយ៍' : 'Add Station'}
-          </button>
+            <Gauge size={14} color="var(--fuel-accent)" />
+            {lang === 'km' ? 'ស្តុកសាំង' : 'Stock'}
+          </Link>
+          <Link
+            to="/stations"
+            className="btn btn-secondary btn-sm"
+            style={{ height: '36px', gap: '6px', display: 'inline-flex', alignItems: 'center' }}
+          >
+            <Building2 size={14} />
+            {lang === 'km' ? 'ស្ថានីយ៍' : 'Stations'}
+          </Link>
         </div>
       </div>
 
@@ -215,59 +224,25 @@ export default function FuelManagement({
           </span>
         </button>
 
-        {/* Tab 3: Stations & Stock - Admin Only */}
-        {userRole === 'admin' && (
-          <button
-            className={`office-subtab-btn ${activeSubTab === 'stations' ? 'active' : ''}`}
-            onClick={() => setActiveSubTab('stations')}
-          >
-            <Gauge size={15} />
-            <span>{lang === 'km' ? '៣. ស្ថានីយ៍ & ស្តុក' : '3. Stations & Stock'}</span>
-            <span
-              className="office-subtab-badge"
-              style={{
-                background: lowStockStations.length > 0 ? 'var(--danger-subtle)' : undefined,
-                color: lowStockStations.length > 0 ? 'var(--danger)' : undefined
-              }}
-            >
-              {stations.length} {lowStockStations.length > 0 ? `(${lowStockStations.length} !)` : ''}
-            </span>
-          </button>
-        )}
-
-        {/* Tab 4: Staff & Fleet - Admin Only */}
-        {userRole === 'admin' && (
-          <button
-            className={`office-subtab-btn ${activeSubTab === 'fleet' ? 'active' : ''}`}
-            onClick={() => setActiveSubTab('fleet')}
-          >
-            <Users size={15} />
-            <span>{lang === 'km' ? '៤. បុគ្គលិក & ស្ថានីយ៍' : '4. Staff & Fleet'}</span>
-            <span className="office-subtab-badge">
-              {staff.length} {lang === 'km' ? 'នាក់' : 'staff'}
-            </span>
-          </button>
-        )}
-
-        {/* Tab 5: SOP Compliance Audit Matrix - Admin Only */}
+        {/* Tab 3: SOP Compliance Audit Matrix - Admin Only */}
         {userRole === 'admin' && (
           <button
             className={`office-subtab-btn ${activeSubTab === 'sop' ? 'active' : ''}`}
             onClick={() => setActiveSubTab('sop')}
           >
             <ShieldCheck size={15} />
-            <span>{lang === 'km' ? '៥. បទដ្ឋាន SOP & សវនកម្ម' : '5. SOP Audit Matrix'}</span>
+            <span>{lang === 'km' ? '៣. បទដ្ឋាន SOP & សវនកម្ម' : '3. SOP Audit Matrix'}</span>
           </button>
         )}
 
-        {/* Tab 6: Saved Archives & Reports - Admin Only */}
+        {/* Tab 4: Saved Archives & Reports - Admin Only */}
         {userRole === 'admin' && (
           <button
             className={`office-subtab-btn ${activeSubTab === 'archives' ? 'active' : ''}`}
             onClick={() => setActiveSubTab('archives')}
           >
             <Archive size={15} />
-            <span>{lang === 'km' ? '៦. ប័ណ្ណរក្សាទុក & ឯកសារ' : '6. Archives & Reports'}</span>
+            <span>{lang === 'km' ? '៤. ប័ណ្ណរក្សាទុក & ឯកសារ' : '4. Archives & Reports'}</span>
           </button>
         )}
       </div>
@@ -365,97 +340,7 @@ export default function FuelManagement({
         />
       )}
 
-      {/* ── SUB-TAB 3: STATIONS & STOCK MANAGEMENT ── */}
-      {activeSubTab === 'stations' && userRole === 'admin' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div className="section-label">
-              <Fuel size={14} color="var(--fuel-accent)" />
-              {lang === 'km' ? 'បញ្ជីស្ថានីយ៍សាំង & កម្រិតស្តុកជាក់ស្តែង' : 'Fuel Stations & Live Stock Gauges'}
-            </div>
-            <button onClick={() => setShowAddStation(true)} className="btn btn-fuel btn-sm">
-              <Plus size={14} /> {lang === 'km' ? 'បន្ថែមស្ថានីយ៍ថ្មី' : 'Add New Station'}
-            </button>
-          </div>
-
-          {stations.length === 0 ? (
-            <div className="card" style={{ padding: '50px 20px', textAlign: 'center' }}>
-              <div style={{ color: 'var(--text-dim)', marginBottom: '14px', display: 'flex', justifyContent: 'center' }}>
-                <Fuel size={40} />
-              </div>
-              <p style={{ fontSize: '0.88rem', marginBottom: '16px' }}>
-                {lang === 'km' ? 'មិនទាន់មានស្ថានីយ៍សាំងឡើយ — ចុចបន្ថែមស្ថានីយ៍ខាងលើ' : 'No fuel stations yet. Click "Add Station" above.'}
-              </p>
-              <button onClick={() => setShowAddStation(true)} className="btn btn-fuel" style={{ display: 'inline-flex', margin: '0 auto' }}>
-                <Plus size={14} /> {lang === 'km' ? 'បន្ថែមស្ថានីយ៍ដំបូង' : 'Add First Station'}
-              </button>
-            </div>
-          ) : (
-            <div className="grid-3">
-              {stations.map(s => (
-                <div key={s.id} className="card card-hover" style={{ padding: '20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '3px' }}>
-                        {s.name || s.station_name}
-                      </div>
-                      <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                        {lang === 'km' ? 'កម្រិតអប្បបរមា' : 'Reorder Threshold'}: {(s.reorder_threshold_liters || 4000).toLocaleString()} L
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span className={s.current_stock_liters < (s.reorder_threshold_liters || 4000) ? 'badge badge-danger' : 'badge badge-success'}>
-                        {s.current_stock_liters < (s.reorder_threshold_liters || 4000) ? t.reorderNeeded : t.normalStock}
-                      </span>
-                      <button
-                        onClick={() => { setEditingStation(s); setShowAddStation(true); }}
-                        title={lang === 'km' ? 'កែប្រែស្ថានីយ៍' : 'Edit station'}
-                        className="btn btn-ghost btn-icon btn-sm"
-                        style={{ color: 'var(--primary)' }}
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteStationClick(s.id)}
-                        title={t.deleteStation || 'Delete'}
-                        className="btn btn-ghost btn-icon btn-sm"
-                        style={{ color: 'var(--text-dim)' }}
-                        onMouseEnter={e => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.background = 'var(--danger-subtle)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.background = 'transparent'; }}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                  <StockGauge
-                    currentStock={s.current_stock_liters}
-                    targetCapacity={s.target_capacity_liters || 6000}
-                    threshold={s.reorder_threshold_liters || 4000}
-                    lang={lang}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── SUB-TAB 4: STAFF & FLEET DIRECTORY ── */}
-      {activeSubTab === 'fleet' && userRole === 'admin' && (
-        <StaffManager
-          staff={staff}
-          drivers={drivers}
-          onAddStaff={onAddStaff}
-          onEditStaff={onEditStaff}
-          onDeleteStaff={onDeleteStaff}
-          onSaveSignature={onSaveSignature}
-          stations={stations}
-          fuelLogs={fuelLogs}
-          lang={lang}
-        />
-      )}
-
-      {/* ── SUB-TAB 5: SOP COMPLIANCE AUDIT MATRIX ── */}
+      {/* ── SUB-TAB 3: SOP COMPLIANCE AUDIT MATRIX ── */}
       {activeSubTab === 'sop' && userRole === 'admin' && (
         <FuelSopTable
           stations={stations}

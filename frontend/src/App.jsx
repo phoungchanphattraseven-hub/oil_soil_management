@@ -8,6 +8,10 @@ import LoginPage from './pages/LoginPage';
 import AdminPage from './pages/AdminPage';
 import UserFuelPage from './pages/UserFuelPage';
 import UserSoilPage from './pages/UserSoilPage';
+import StaffPage from './pages/StaffPage';
+import StaffAttendancePage from './pages/StaffAttendancePage';
+import StationsPage from './pages/StationsPage';
+import StockPage from './pages/StockPage';
 import { MOCK_USERS, DEFAULT_FUEL_STATIONS, INITIAL_FUEL_LOGS, INITIAL_SOIL_LOGS, DEFAULT_ABBR_CODES, DEFAULT_DRIVERS } from './data/mockData';
 import { exportAllData, importFromFile } from './utils/dataBackup';
 import './utils/testValidation'; // Load test utilities into window object
@@ -44,9 +48,21 @@ function getStoredFuelLogs() {
 }
 
 function getStoredAbbrCodes() {
+  const demoPlates = new Set(['2A-8899', '3B-4455', 'PP-3912', '3C-7788']);
   try {
     const raw = localStorage.getItem('app_license_plates');
-    return raw ? JSON.parse(raw) : DEFAULT_ABBR_CODES;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const filtered = Array.isArray(parsed) ? parsed.filter(p => !demoPlates.has(p)) : [];
+      if (filtered.length > 0) return filtered;
+    }
+    const staffRaw = localStorage.getItem('app_staff');
+    if (staffRaw) {
+      const staffList = JSON.parse(staffRaw);
+      const staffPlates = Array.from(new Set(staffList.map(s => s.license_plate?.trim()).filter(Boolean)));
+      if (staffPlates.length > 0) return staffPlates;
+    }
+    return DEFAULT_ABBR_CODES;
   } catch { return DEFAULT_ABBR_CODES; }
 }
 
@@ -500,6 +516,20 @@ export default function App() {
           // Normalize: map station_name → working_at for UI compatibility
           const normalized = data.staff.map(s => ({ ...s, working_at: s.station_name || s.working_at || '' }));
           setStaff(normalized);
+
+          // Extract real registered license plates from staff fleet
+          const realPlates = Array.from(new Set(
+            normalized.map(s => s.license_plate?.trim()).filter(Boolean)
+          ));
+          if (realPlates.length > 0) {
+            setAbbrCodes(prev => {
+              const demoPlates = new Set(['2A-8899', '3B-4455', 'PP-3912', '3C-7788']);
+              const userCustom = prev.filter(p => !demoPlates.has(p));
+              const combined = Array.from(new Set([...realPlates, ...userCustom]));
+              try { localStorage.setItem('app_license_plates', JSON.stringify(combined)); } catch (_) {}
+              return combined;
+            });
+          }
         }
         if (data.archives && Array.isArray(data.archives)) {
           const normalizedArchives = data.archives.map(a => ({
@@ -595,6 +625,18 @@ export default function App() {
         if (Array.isArray(data.staff)) {
           const normalized = data.staff.map(s => ({ ...s, working_at: s.station_name || s.working_at || '' }));
           setStaff(normalized);
+
+          const realPlates = Array.from(new Set(
+            normalized.map(s => s.license_plate?.trim()).filter(Boolean)
+          ));
+          if (realPlates.length > 0) {
+            setAbbrCodes(prev => {
+              const demoPlates = new Set(['2A-8899', '3B-4455', 'PP-3912', '3C-7788']);
+              const userCustom = prev.filter(p => !demoPlates.has(p));
+              const combined = Array.from(new Set([...realPlates, ...userCustom]));
+              return combined;
+            });
+          }
         }
 
         if (Array.isArray(data.archives)) {
@@ -982,8 +1024,6 @@ export default function App() {
       logged_by: activeRole === 'admin' ? 'user-admin-01' : 'user-phattra-02',
       trip_count: newLog.trip_count,
       cubic_meters_per_trip: newLog.cubic_meters_per_trip,
-      scrap_sales_amount: newLog.scrap_sales_amount,
-      staff_decisions: newLog.staff_decisions,
       issues_description: newLog.issues_description,
       receipt_photo_url: newLog.receipt_photo_url,
       time_start: newLog.time_start,
@@ -1017,11 +1057,47 @@ export default function App() {
   // Handler: Delete a soil log
   const handleDeleteSoilLog = (logId) => {
     setSoilLogs(prev => prev.filter(l => l.id !== logId));
+    fetch(`${API_BASE_URL}/soil/log/${logId}`, {
+      method: 'DELETE'
+    })
+      .then(res => res.json())
+      .then(resData => console.log('Soil log deleted from backend:', resData))
+      .catch(e => console.log('Backend sync offline, removed locally.'));
   };
 
   // Handler: Edit a soil log
   const handleEditSoilLog = (updatedLog) => {
     setSoilLogs(prev => prev.map(l => l.id === updatedLog.id ? updatedLog : l));
+    fetch(`${API_BASE_URL}/soil/log/${updatedLog.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        station_name: updatedLog.station_name,
+        code_abbr: updatedLog.code_abbr || "SL-STN-001",
+        trip_count: updatedLog.trip_count,
+        cubic_meters_per_trip: updatedLog.cubic_meters_per_trip,
+        issues_description: updatedLog.issues_description || null,
+        receipt_photo_url: updatedLog.receipt_photo_url || "",
+        time_start: updatedLog.time_start || "07:00",
+        time_end: updatedLog.time_end || "17:00",
+        log_date: updatedLog.log_date || (updatedLog.created_at ? updatedLog.created_at.substring(0, 10) : new Date().toISOString().substring(0, 10))
+      })
+    })
+      .then(res => res.json())
+      .then(resData => console.log('Soil log updated in backend:', resData))
+      .catch(e => console.log('Backend soil edit sync offline, updated locally.'));
+  };
+
+  // Handler: Clear all soil logs
+  const handleClearSoilLogs = () => {
+    setSoilLogs([]);
+    try {
+      localStorage.setItem('app_soil_logs', '[]');
+    } catch (_) {}
+    fetch(`${API_BASE_URL}/soil/logs/clear`, { method: 'DELETE' })
+      .then(res => res.json())
+      .then(data => console.log('Active soil logs cleared on backend:', data))
+      .catch(e => console.log('Backend clear API offline, cleared locally.', e));
   };
 
   // ── Data Export / Import handlers ──────────────────────────
@@ -1152,7 +1228,9 @@ export default function App() {
               userRole === 'user' ? (
                 <UserSoilPage
                   soilLogs={soilLogs}
+                  stations={fuelStations}
                   abbrCodes={abbrCodes}
+                  staff={staff}
                   onAddAbbrCode={handleAddAbbrCode}
                   onAddSoilLog={handleAddSoilLog}
                   lang={lang}
@@ -1161,16 +1239,82 @@ export default function App() {
               ) : (
                 <SoilManagement
                   soilLogs={soilLogs}
+                  stations={fuelStations}
                   abbrCodes={abbrCodes}
+                  staff={staff}
                   onAddAbbrCode={handleAddAbbrCode}
+                  onDeleteAbbrCode={handleDeleteAbbrCode}
                   onAddSoilLog={handleAddSoilLog}
                   onDeleteSoilLog={handleDeleteSoilLog}
                   onEditSoilLog={handleEditSoilLog}
+                  onClearSoilLogs={handleClearSoilLogs}
                   lang={lang}
                   userRole={userRole}
                   assignedStation={userAssignedStation}
                 />
               )
+            }
+          />
+          <Route
+            path="/staff"
+            element={
+              <StaffPage
+                staff={staff}
+                drivers={drivers}
+                onAddStaff={handleAddStaff}
+                onEditStaff={handleEditStaff}
+                onDeleteStaff={handleDeleteStaff}
+                onSaveSignature={handleSaveSignature}
+                stations={fuelStations}
+                fuelLogs={fuelLogs}
+                lang={lang}
+                userRole={userRole}
+              />
+            }
+          />
+          <Route
+            path="/attendance"
+            element={
+              <StaffAttendancePage
+                staff={staff}
+                stations={fuelStations}
+                fuelLogs={fuelLogs}
+                soilLogs={soilLogs}
+                lang={lang}
+                userRole={userRole}
+              />
+            }
+          />
+          <Route
+            path="/stations"
+            element={
+              <StationsPage
+                stations={fuelStations}
+                onAddStation={handleAddStation}
+                onEditStation={handleEditStation}
+                onDeleteStation={handleDeleteStation}
+                staff={staff}
+                fuelLogs={fuelLogs}
+                lang={lang}
+                userRole={userRole}
+              />
+            }
+          />
+          <Route
+            path="/stock"
+            element={
+              <StockPage
+                stations={fuelStations}
+                fuelLogs={fuelLogs}
+                staff={staff}
+                onAddFuelLog={handleAddFuelLog}
+                onAddStation={handleAddStation}
+                onEditStation={handleEditStation}
+                onDeleteStation={handleDeleteStation}
+                lang={lang}
+                userRole={userRole}
+                assignedStation={userAssignedStation}
+              />
             }
           />
           <Route

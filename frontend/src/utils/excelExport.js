@@ -84,8 +84,7 @@ export function exportSoilLogsToExcel(logs = [], filename = 'Soil_Logs_Archive.x
     [isKm ? 'ចំនួនជើង' : 'Trip Count']: parseInt(log.trip_count, 10) || 0,
     [isKm ? 'មាឌដី១ជើង (m³)' : 'm³ Per Trip']: parseFloat(log.cubic_meters_per_trip) || 0,
     [isKm ? 'មាឌដីសរុប (m³)' : 'Total Volume (m³)']: parseFloat(log.total_cubic_meters) || 0,
-    [isKm ? 'លក់សឡាក់ ($)' : 'Scrap Sales ($)']: parseFloat(log.scrap_sales_amount) || 0,
-    [isKm ? 'ការសម្រេចចិត្តបុគ្គលិក' : 'Staff Decision']: log.staff_decisions || '',
+
     [isKm ? 'បញ្ហាជួបប្រទះ' : 'Issues']: log.issues_description || '',
     [isKm ? 'អ្នកកត់ត្រា' : 'Logged By']: log.logged_by || 'Phattra'
   }));

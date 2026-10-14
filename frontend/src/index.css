@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Khmer:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --font-family: 'Inter', 'Noto Sans Khmer', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family: 'Kantumruy Pro', 'Inter', 'Noto Sans Khmer', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   /* Core Background */
   --bg-app:       #07090f;
@@ -1957,7 +1957,12 @@ body:has(.modal-overlay) {
     height: 15px !important;
   }
   .user-profile-btn { padding: 0 !important; }
-  .user-profile-btn > div:first-child { width: 27px !important; height: 27px !important; font-size: 0.68rem !important; }
+  .user-profile-btn > div:first-child,
+  .user-profile-btn > img:first-child { 
+    width: 27px !important; 
+    height: 27px !important; 
+    font-size: 0.68rem !important; 
+  }
 
   /* Bottom nav visible */
   .mobile-bottom-nav {

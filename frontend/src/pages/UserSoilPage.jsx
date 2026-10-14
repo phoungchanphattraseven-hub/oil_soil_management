@@ -5,31 +5,68 @@ import ImageUploader from '../components/Common/ImageUploader';
 import { playSuccessSound } from '../utils/notifications';
 
 export default function UserSoilPage({
-  soilLogs = [], abbrCodes = [], onAddAbbrCode,
+  soilLogs = [], stations = [], abbrCodes = [], staff = [], onAddAbbrCode,
   onAddSoilLog, lang = 'km',
   assignedStation = { id: '', name: '' }
 }) {
   const isKm = lang === 'km';
   const todayStr = new Date().toISOString().substring(0, 10);
 
-  const defaultName = assignedStation?.name || (isKm ? 'ស្ថានីយ៍ចាក់ដី' : 'Soil Site');
+  const allAvailablePlates = React.useMemo(() => {
+    const demoPlates = new Set(['2A-8899', '3B-4455', 'PP-3912', '3C-7788']);
+    const staffPlates = staff.map(s => s.license_plate?.trim()).filter(Boolean);
+    const combined = Array.from(new Set([...staffPlates, ...abbrCodes])).filter(p => !demoPlates.has(p));
+    return combined;
+  }, [staff, abbrCodes]);
+
+  const defaultName = assignedStation?.name || '';
   const [stationName, setStation] = useState(defaultName);
   const [codeAbbr, setCode]       = useState('');
   const [tripCount, setTrips]     = useState('');
   const [m3PerTrip, setM3]        = useState('');
-  const [scrap, setScrap]         = useState('');
-  const [decisions, setDecisions] = useState('');
   const [issues, setIssues]       = useState('');
   const [photo, setPhoto]         = useState('');
   const [logDate, setDate]        = useState(todayStr);
   const [timeStart, setStart]     = useState('07:00');
-  const [timeEnd, setEnd]         = useState('17:30');
+  const [timeEnd, setEnd]         = useState('17:00');
   const [showExtra, setShowExtra] = useState(false);
   const [isSuccess, setSuccess]   = useState(false);
 
+  const availableStations = React.useMemo(() => {
+    const list = [];
+    const seen = new Set();
+    if (assignedStation?.name) {
+      seen.add(assignedStation.name);
+      list.push({ id: assignedStation.id || assignedStation.name, name: assignedStation.name });
+    }
+    if (Array.isArray(stations) && stations.length > 0) {
+      stations.forEach(s => {
+        const name = s.name || s.station_name;
+        if (name && !seen.has(name)) {
+          seen.add(name);
+          list.push({ id: s.id || name, name });
+        }
+      });
+    }
+    if (Array.isArray(soilLogs) && soilLogs.length > 0) {
+      soilLogs.forEach(l => {
+        if (l.station_name && !seen.has(l.station_name)) {
+          seen.add(l.station_name);
+          list.push({ id: l.station_name, name: l.station_name });
+        }
+      });
+    }
+
+    return list;
+  }, [stations, soilLogs, assignedStation]);
+
   useEffect(() => {
-    if (assignedStation?.name) setStation(assignedStation.name);
-  }, [assignedStation?.name]);
+    if (assignedStation?.name) {
+      setStation(assignedStation.name);
+    } else if ((!stationName || !availableStations.some(s => s.name === stationName)) && availableStations.length > 0) {
+      setStation(availableStations[0].name);
+    }
+  }, [assignedStation?.name, availableStations]);
 
   const locked = !!assignedStation?.name;
   const totalVol = (parseFloat(tripCount) || 0) * (parseFloat(m3PerTrip) || 0);
@@ -49,8 +86,6 @@ export default function UserSoilPage({
       trip_count: parseInt(tripCount, 10),
       cubic_meters_per_trip: parseFloat(m3PerTrip),
       total_cubic_meters: totalVol,
-      scrap_sales_amount: parseFloat(scrap) || 0,
-      staff_decisions: decisions || (isKm ? 'ប្រតិបត្តិការតាមផែនការ' : 'Operations as planned'),
       issues_description: issues || '',
       receipt_photo_url: photo || '',
       log_date: logDate,
@@ -58,7 +93,7 @@ export default function UserSoilPage({
       time_end: timeEnd,
       created_at: new Date().toISOString()
     });
-    setTrips(''); setM3(''); setScrap(''); setDecisions(''); setIssues(''); setPhoto(''); setCode('');
+    setTrips(''); setM3(''); setIssues(''); setPhoto(''); setCode('');
     if (!result || result.success || result.queued) {
       playSuccessSound();
       setSuccess(true);
@@ -141,8 +176,23 @@ export default function UserSoilPage({
               </span>
             </div>
           ) : (
-            <input type="text" className="form-control" value={stationName}
-              onChange={e => setStation(e.target.value)} required style={{ fontSize: '0.88rem' }} />
+            <select
+              className="form-control"
+              value={stationName}
+              onChange={e => setStation(e.target.value)}
+              required
+              style={{ fontSize: '0.88rem' }}
+            >
+              {availableStations.length === 0 ? (
+                <option value="">{isKm ? 'គ្មានស្ថានីយ៍' : 'No stations'}</option>
+              ) : (
+                availableStations.map(s => (
+                  <option key={s.id} value={s.name}>
+                    {s.name}
+                  </option>
+                ))
+              )}
+            </select>
           )}
         </div>
 
@@ -160,7 +210,7 @@ export default function UserSoilPage({
             <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px', display: 'block' }}>
               {isKm ? 'លេខកូដ' : 'Code'}
             </label>
-            <AbbrCodeSelector value={codeAbbr} onChange={setCode} abbrCodes={abbrCodes} onAddAbbrCode={onAddAbbrCode} lang={lang} />
+            <AbbrCodeSelector value={codeAbbr} onChange={setCode} abbrCodes={allAvailablePlates} onAddAbbrCode={onAddAbbrCode} lang={lang} />
           </div>
         </div>
 
@@ -224,21 +274,6 @@ export default function UserSoilPage({
 
         {showExtra && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '12px' }}>
-            <div>
-              <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px', display: 'block' }}>
-                {isKm ? 'ការសម្រេចចិត្ត' : 'Decisions'}
-              </label>
-              <textarea rows={2} className="form-control" value={decisions}
-                onChange={e => setDecisions(e.target.value)} style={{ fontSize: '0.88rem' }}
-                placeholder={isKm ? 'ឧ. បន្ថែមឡាន ២ គ្រឿង...' : 'e.g. Added 2 extra trucks...'} />
-            </div>
-            <div>
-              <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px', display: 'block' }}>
-                {isKm ? 'ប្រេងលក់/ការស' : 'Scrap Sales ($)'}
-              </label>
-              <input type="number" step="any" className="form-control" value={scrap}
-                onChange={e => setScrap(e.target.value)} placeholder="e.g. 150.00" style={{ fontSize: '0.88rem' }} />
-            </div>
             <div>
               <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px', display: 'block' }}>
                 {isKm ? 'បញ្ហា' : 'Issues'}

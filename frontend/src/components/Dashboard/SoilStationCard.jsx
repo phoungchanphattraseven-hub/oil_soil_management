@@ -1,5 +1,4 @@
-import React from 'react';
-import { HardHat, Truck, Box, DollarSign, UserCheck, AlertCircle } from 'lucide-react';
+import { HardHat, Truck, Box, AlertCircle } from 'lucide-react';
 import { translations } from '../../data/translations';
 
 export default function SoilStationCard({ soilLog, lang = 'km' }) {
@@ -39,7 +38,7 @@ export default function SoilStationCard({ soilLog, lang = 'km' }) {
       {/* Metrics Row */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
+        gridTemplateColumns: 'repeat(2, 1fr)',
         gap: '10px',
         background: 'var(--surface-input)',
         padding: '10px 12px',
@@ -62,33 +61,9 @@ export default function SoilStationCard({ soilLog, lang = 'km' }) {
             {soilLog.total_cubic_meters} m³
           </div>
         </div>
-        <div>
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'uppercase' }}>
-            <DollarSign size={12} /> {t.scrapSalesLabel}
-          </span>
-          <div style={{ fontSize: '1rem', fontWeight: 700, color: '#fbbf24', marginTop: '2px' }}>
-            ${soilLog.scrap_sales_amount}
-          </div>
-        </div>
       </div>
 
-      {/* Staff Decisions */}
-      {soilLog.staff_decisions && (
-        <div style={{
-          background: 'rgba(59, 130, 246, 0.06)',
-          border: '1px solid rgba(59, 130, 246, 0.2)',
-          padding: '10px 12px',
-          borderRadius: 'var(--radius-sm)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px', color: 'var(--primary)', fontWeight: 600, fontSize: '0.75rem' }}>
-            <UserCheck size={13} />
-            <span>{t.staffDecisionLabel}</span>
-          </div>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-main)', margin: 0, lineHeight: 1.4 }}>
-            {soilLog.staff_decisions}
-          </p>
-        </div>
-      )}
+
 
       {/* Operational Issues if any */}
       {soilLog.issues_description && (

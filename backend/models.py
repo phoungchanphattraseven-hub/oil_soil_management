@@ -25,7 +25,7 @@ class SoilLogInput(BaseModel):
     logged_by: Optional[str] = None
     trip_count: int
     cubic_meters_per_trip: float
-    scrap_sales_amount: float = 0.0
+    scrap_sales_amount: Optional[float] = 0.0
     staff_decisions: Optional[str] = None  # Point 3.2: «ការសម្រេចចិត្តរបស់បុគ្គលិក»
     issues_description: Optional[str] = None
     receipt_photo_url: Optional[str] = ""  # Made optional to match corrected schema
